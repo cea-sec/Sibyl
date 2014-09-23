@@ -1,3 +1,8 @@
+This file is part of Sibyl.
+
+Copyright 2014 [Camille MOUGEY](mailto:camille.mougey@cea.fr)
+
+
 Sibyl
 =====
 
