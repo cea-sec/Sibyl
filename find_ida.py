@@ -15,6 +15,7 @@
 # along with Sibyl. If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import os
 import subprocess
 import time
 
@@ -22,13 +23,15 @@ from idaapi import *
 import idautils
 
 identify_binary = ""
+env = os.environ
 
 
 def identify_help():
     """Sibyl IDA API helper"""
     find = subprocess.Popen(["python", identify_binary, "-h"],
                             stdout = subprocess.PIPE,
-                            stderr = subprocess.PIPE)
+                            stderr = subprocess.PIPE,
+                            env = env)
     res = find.communicate()[0].split("\n")
 
     s = ""
@@ -106,7 +109,8 @@ def launch_on_funcs(architecture, abi, funcs, map_addr=None, jitter="tcc",
         # Call Sibyl and keep only stdout
         find = subprocess.Popen(command_line,
                                 stdout = subprocess.PIPE,
-                                stderr = subprocess.PIPE)
+                                stderr = subprocess.PIPE,
+                                env = env)
         res = find.communicate()[0]
 
         # Print current status and estimated time
