@@ -59,7 +59,7 @@ Architecture and ABI available are displayed below:
 
 def launch_on_funcs(architecture, abi, funcs, map_addr=None, jitter="tcc",
                     buf_size=2000, test_set=["all"]):
-    filename = str(GetInputFile())
+    filename = str(GetInputFilePath())
 
     nb_func = len(funcs)
     starttime = time.time()
