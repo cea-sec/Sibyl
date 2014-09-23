@@ -76,6 +76,11 @@ def launch_on_funcs(architecture, abi, funcs, map_addr=None, jitter="tcc",
     @test_set: (optional) list of test sets to run
     """
 
+    # Check Sibyl availability
+    global identify_binary
+    if not identify_binary:
+        raise ValueError("A valid Sibyl path to find.py must be supplied")
+
     # Get binary information
     filename = str(GetInputFilePath())
     nb_func = len(funcs)
