@@ -64,7 +64,7 @@ class Test(object):
         mem += "".join([chr(random.randint(0, 255)) \
                             for _ in xrange((16 - len(mem) % 16))])
 
-        self.jitter.vm.vm_add_memory_page(self.alloc_pool, right, mem)
+        self.jitter.vm.add_memory_page(self.alloc_pool, right, mem)
         to_ret = self.alloc_pool
         self.alloc_pool += len(mem) + 1
 
@@ -84,7 +84,7 @@ class Test(object):
                                 write=write)
 
     def _write_mem(self, addr, element):
-        self.jitter.vm.vm_set_mem(addr, element)
+        self.jitter.vm.set_mem(addr, element)
 
     def _write_string(self, addr, element):
         self._write_mem(addr, element + "\x00")
@@ -97,7 +97,7 @@ class Test(object):
 
     def _ensure_mem(self, addr, element):
         try:
-            return self.jitter.vm.vm_get_mem(addr, len(element)) == element
+            return self.jitter.vm.get_mem(addr, len(element)) == element
         except RuntimeError:
             return False
 
@@ -113,7 +113,7 @@ class Test(object):
     def _memread_pointer(self, addr):
         pointer_size = self.abi.ira.sizeof_pointer() / 8
         try:
-            element = self.jitter.vm.vm_get_mem(addr, pointer_size)
+            element = self.jitter.vm.get_mem(addr, pointer_size)
         except RuntimeError:
             return False
         return Test.unpack(element)

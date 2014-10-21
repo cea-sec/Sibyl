@@ -67,25 +67,25 @@ class TestLauncher(object):
 
     def load_vm(self, filename, map_addr):
         self.ctr = Container(filename, self.jitter.vm, map_addr)
-        self.jitter.cpu.vm_init_regs()
+        self.jitter.cpu.init_regs()
         self.jitter.init_stack()
 
     def save_vm(self):
-        self.vm_mem = self.jitter.vm.vm_get_all_memory()
-        self.vm_regs = self.jitter.cpu.vm_get_gpreg()
+        self.vm_mem = self.jitter.vm.get_all_memory()
+        self.vm_regs = self.jitter.cpu.get_gpreg()
 
     def restore_vm(self, reset_mem=True):
         # Restore memory
         if reset_mem:
-            self.jitter.vm.vm_reset_memory_page_pool()
+            self.jitter.vm.reset_memory_page_pool()
             for addr, metadata in self.vm_mem.items():
-                self.jitter.vm.vm_add_memory_page(addr,
+                self.jitter.vm.add_memory_page(addr,
                                                   metadata["access"],
                                                   metadata["data"])
 
         # Restore registers
-        self.jitter.cpu.vm_init_regs()
-        self.jitter.cpu.vm_set_gpreg(self.vm_regs)
+        self.jitter.cpu.init_regs()
+        self.jitter.cpu.set_gpreg(self.vm_regs)
 
     @staticmethod
     def _code_sentinelle(jitter):
@@ -117,7 +117,7 @@ class TestLauncher(object):
 
     def reset_state(self, reset_mem=True):
         self.restore_vm(reset_mem)
-        self.jitter.vm.vm_set_exception(0)
+        self.jitter.vm.set_exception(0)
         self.abi.reset()
 
     def launch_tests(self, test, address, timeout_seconds=0):

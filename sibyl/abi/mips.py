@@ -26,7 +26,7 @@ class ABI_MIPS_O32(abi.ABIRegsStack):
         self.jitter.cpu.RA = ret_addr
 
     def vm_push(self, element):
-        self.jitter.vm_push_uint32_t(element)
+        self.jitter.push_uint32_t(element)
 
 
 ABIS = [ABI_MIPS_O32]
