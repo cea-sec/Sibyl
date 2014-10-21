@@ -57,11 +57,10 @@ $ python find.py -h
 
 positional arguments:
   filename              File to load
-  architecture          Architecture used. Available: arm,armt,sh4,x86_16,x86_
-                        32,x86_64,msp430,mips32b,mips32l
-  abi                   ABI to used. Available:
-                        ABIStdCall_x86_32,ABIFastCall_x86_32ABI_AMD64,ABI_ARM,
-                        ABI_MIPS_O32
+  architecture          Architecture used. Available: arml,armb,armtl,armtb,sh
+                        4,x86_16,x86_32,x86_64,msp430,mips32b,mips32l
+  abi                   ABI to used. Available: ABIStdCall_x86_32,ABIFastCall_
+                        x86_32,ABI_AMD64,ABI_ARM,ABI_MIPS_O32
   address               Address of the function under test
 
 optional arguments:
@@ -140,7 +139,7 @@ Finished ! Found 18 candidates in 145.24s
 ```
 On **arm v6**, ARM ABI(_busybox-armv6l_ v1.21.1):
 ```
-Python>identify_all("arm", "ABI_ARM")
+Python>identify_all("arml", "ABI_ARM")
 Launch identification on 3063 function(s)
 Current: 65.30% (sub_0xab228)| Estimated time remaining: 54.93s
 0x0000a21c : strcpy
