@@ -40,9 +40,7 @@ static const char a64l_table[TABLE_SIZE] =
 };
 
 
-long int
-a64l (string)
-     const char *string;
+long int a64l(const char *string)
 {
   const char *ptr = string;
   unsigned long int result = 0ul;
@@ -71,8 +69,7 @@ a64l (string)
 
 
 /* Convert a string to an int.  */
-int
-atoi (const char *nptr)
+int atoi(const char *nptr)
 {
   return (int) strtol (nptr, (char **) NULL, 10);
 }
