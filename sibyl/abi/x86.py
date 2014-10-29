@@ -35,7 +35,7 @@ class ABIStdCall_x86_32(ABIRegsStack_x86):
 
 class ABIFastCall_x86_32(ABIRegsStack_x86):
 
-    regs_mapping = ["ECX", "EDX"] # Stack only
+    regs_mapping = ["ECX", "EDX"]
 
     def vm_push(self, element):
         self.jitter.push_uint32_t(element)
