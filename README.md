@@ -251,6 +251,39 @@ _Sibyl_ requires the last version of _Miasm2_ and the corresponding version of _
 _Sibyl_ comes as a package, without _setup.py_ utility for now.
 One just needs to add the _Sibyl_ root directory to its _PYTHONPATH_ environment variable.
 
+_Sibyl_ is also available through _Docker automated build_. Use:
+
+```
+$ docker run -i -t commial/sibyl
+usage: find.py [-h] [-t [TESTS [TESTS ...]]] [-v] [-q] [-i TIMEOUT]
+               [-m MAPPING_BASE] [-j JITTER]
+               filename architecture abi address [address ...]
+
+Function guesser
+
+positional arguments:
+  filename              File to load
+  architecture          Architecture used. Available: arml,armb,armtl,armtb,sh
+                        4,x86_16,x86_32,x86_64,msp430,mips32b,mips32l
+  abi                   ABI to used. Available: ABIStdCall_x86_32,ABIFastCall_
+                        x86_32,ABI_AMD64,ABI_ARM,ABI_MIPS_O32
+  address               Address of the function under test
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -t [TESTS [TESTS ...]], --tests [TESTS [TESTS ...]]
+                        Tests to run. Available: all,ctype,string,stdlib
+  -v, --verbose         Verbose mode
+  -q, --quiet           Display only results
+  -i TIMEOUT, --timeout TIMEOUT
+                        Test timeout (in seconds)
+  -m MAPPING_BASE, --mapping-base MAPPING_BASE
+                        Binary mapping address
+  -j JITTER, --jitter JITTER
+                        Jitter engine. Available: tcc (default), llvm, python
+
+```
+
 FAQ
 ---
 
