@@ -66,7 +66,8 @@ class TestLauncher(object):
         self.tests = tests
 
     def load_vm(self, filename, map_addr):
-        self.ctr = Container(filename, self.jitter.vm, map_addr)
+        self.ctr = Container.from_stream(open(filename), vm=self.jitter.vm,
+                                         addr=map_addr)
         self.jitter.cpu.init_regs()
         self.jitter.init_stack()
 
