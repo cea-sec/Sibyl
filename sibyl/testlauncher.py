@@ -79,7 +79,7 @@ class TestLauncher(object):
         # Restore memory
         if reset_mem:
             self.jitter.vm.reset_memory_page_pool()
-            for addr, metadata in self.vm_mem.items():
+            for addr, metadata in self.vm_mem.iteritems():
                 self.jitter.vm.add_memory_page(addr,
                                                   metadata["access"],
                                                   metadata["data"])
