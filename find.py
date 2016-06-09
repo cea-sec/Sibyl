@@ -46,13 +46,6 @@ args = parser.parse_args()
 
 
 # Functions
-def parse_addr(addr):
-    if "x" in addr.lower():
-        address = int(addr, 16)
-    else:
-        address = int(addr, 10)
-    return address
-
 def do_test(filename, addr_queue, machine, abicls, tests_cls, map_addr, quiet,
             timeout, jitter, verbose):
 
@@ -75,8 +68,8 @@ def do_test(filename, addr_queue, machine, abicls, tests_cls, map_addr, quiet,
 
 # Parse args
 machine = Machine(args.architecture)
-addresses = map(parse_addr, args.address)
-map_addr = parse_addr(args.mapping_base)
+addresses = [int(addr, 0) for addr in args.address]
+map_addr = int(args.mapping_base, 0)
 found = False
 for abicls in ABIS:
     if args.abi == abicls.__name__:
