@@ -42,6 +42,8 @@ parser.add_argument("-m", "--mapping-base", help="Binary mapping address",
                     default="0")
 parser.add_argument("-j", "--jitter", help="""Jitter engine.
 Available: tcc (default), llvm, python""", default="tcc")
+parser.add_argument("-p", "--monoproc", help="Launch tests in a single process",
+                    action="store_true")
 args = parser.parse_args()
 
 
@@ -65,11 +67,27 @@ def do_test(filename, addr_queue, machine, abicls, tests_cls, map_addr, quiet,
         elif not quiet:
             print "No candidate found"
 
+# Fake Process
+class FakeProcess(object):
+    """Mock simulating Process API in monoprocess mode"""
+
+    def __init__(self, target, args):
+        self.target = target
+        self.args = args
+
+    def start(self, *args, **kwargs):
+        self.target(*self.args)
+
+    def join(self, *args, **kwargs):
+        pass
 
 # Parse args
 machine = Machine(args.architecture)
 addresses = [int(addr, 0) for addr in args.address]
 map_addr = int(args.mapping_base, 0)
+if args.monoproc:
+    cpu_count = lambda: 1
+    Process = FakeProcess
 
 for abicls in ABIS:
     if args.abi == abicls.__name__:
@@ -86,14 +104,6 @@ cpu_c = cpu_count()
 queue = Queue()
 processes = []
 
-for _ in xrange(cpu_c):
-    p = Process(target=do_test, args=(args.filename, queue, machine,
-                                      abicls, tests, map_addr,
-                                      args.quiet, args.timeout, args.jitter,
-                                      args.verbose))
-    processes.append(p)
-    p.start()
-
 # Add tasks
 for address in addresses:
     queue.put(address)
@@ -101,6 +111,14 @@ for address in addresses:
 # Add poison pill
 for _ in xrange(cpu_c):
     queue.put(None)
+
+for _ in xrange(cpu_c):
+    p = Process(target=do_test, args=(args.filename, queue, machine,
+                                      abicls, tests, map_addr,
+                                      args.quiet, args.timeout, args.jitter,
+                                      args.verbose))
+    processes.append(p)
+    p.start()
 
 # Get results
 queue.close()
