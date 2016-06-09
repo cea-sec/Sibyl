@@ -70,13 +70,12 @@ def do_test(filename, addr_queue, machine, abicls, tests_cls, map_addr, quiet,
 machine = Machine(args.architecture)
 addresses = [int(addr, 0) for addr in args.address]
 map_addr = int(args.mapping_base, 0)
-found = False
+
 for abicls in ABIS:
     if args.abi == abicls.__name__:
-        found = True
         break
-if not found:
-    raise ValueError("Unknown ABI name")
+else:
+    raise ValueError("Unknown ABI name: %s" % args.abi)
 tests = []
 for tname, tcases in AVAILABLE_TESTS.items():
     if "all" in args.tests or tname in args.tests:
