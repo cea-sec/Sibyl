@@ -127,4 +127,4 @@ for p in processes:
     p.join()
 
 if not queue.empty():
-    print("An error occured: queue is not empty")
+    raise RuntimeError("An error occured: queue is not empty")
