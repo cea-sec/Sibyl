@@ -21,15 +21,16 @@ from miasm2.analysis.machine import Machine
 from sibyl.testlauncher import TestLauncher
 from sibyl.test import AVAILABLE_TESTS
 from sibyl.abi import ABIS
+from sibyl.heuristics.arch import ArchHeuristic
 
 parser = argparse.ArgumentParser(description="Function guesser")
 parser.add_argument("filename", help="File to load")
-parser.add_argument("architecture", help="Architecture used. Available: " + \
-                        ",".join(Machine.available_machine()))
 parser.add_argument("abi", help="ABI to used. Available: " + \
                         ",".join([x.__name__ for x in ABIS]))
 parser.add_argument("address", help="Address of the function under test",
                     nargs="+")
+parser.add_argument("-a", "--architecture", help="Architecture used. Available: " + \
+                    ",".join(Machine.available_machine()))
 parser.add_argument("-t", "--tests", help="Tests to run. Available: all," + \
                         ",".join(AVAILABLE_TESTS.keys()),
                     nargs="*", default=["all"])
@@ -82,7 +83,16 @@ class FakeProcess(object):
         pass
 
 # Parse args
-machine = Machine(args.architecture)
+architecture = False
+if args.architecture:
+    architecture = args.architecture
+else:
+    with open(args.filename) as fdesc:
+        architecture = ArchHeuristic(fdesc).guess()
+    if not architecture:
+        raise ValueError("Unable to recognize the architecture, please specify it")
+
+machine = Machine(architecture)
 addresses = [int(addr, 0) for addr in args.address]
 map_addr = int(args.mapping_base, 0)
 if args.monoproc:
