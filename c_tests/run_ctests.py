@@ -66,7 +66,7 @@ for c_file in c_files:
 
     # Launch Sibyl
     print "[+] Launch Sibyl"
-    cmd = ["python", "../find.py", filename, "x86_32", "ABIStdCall_x86_32",
+    cmd = ["python", "../find.py", filename, "ABIStdCall_x86_32",
            "-q"]
     cmd += [hex(addr) for addr, f in to_check]
     print " ".join(cmd)
