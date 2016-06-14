@@ -15,10 +15,10 @@
 # along with Sibyl. If not, see <http://www.gnu.org/licenses/>.
 
 
-from sibyl.test import test
+from sibyl.test.test import Test, TestSetGenerator
 
 
-class TestIsCharset(test.Test):
+class TestIsCharset(Test):
     """Test for character classification routines:
     isalnum,  isalpha,  isascii,  isblank,  iscntrl,  isdigit, isgraph, islower,
     isprint, ispunct, isspace, isupper, isxdigit
@@ -56,7 +56,7 @@ class TestIsCharset(test.Test):
         # Reset tests tree
         self.cur_tree = self.decision_tree
         self.next_test = self.cur_tree["t"]
-        self.tests = self.test_iter()
+        self.tests = TestSetGenerator(self.test_iter())
 
     def reset(self, *args, **kwargs):
         super(TestIsCharset, self).reset_full(*args, **kwargs)

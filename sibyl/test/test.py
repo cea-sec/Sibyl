@@ -223,3 +223,16 @@ class TestSetTest(TestSet):
 
     def execute(self, callback):
         return callback(self._init, self._check)
+
+
+class TestSetGenerator(TestSet):
+    """TestSet based using a generator to retrieve tests"""
+
+    def __init__(self, generator):
+        self._generator = generator
+
+    def execute(self, callback):
+        for (init, check) in self._generator:
+            if not callback(init, check):
+                return False
+        return True
