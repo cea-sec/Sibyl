@@ -8,33 +8,43 @@ from sibyl.heuristics.heuristic import Heuristic
 import sibyl.heuristics.csts as csts
 
 
-def recursive_call(func_heur, start_addr=None):
-
+def recursive_call(func_heur, addresses=None):
+    """Try to find new functions by following subroutines calls"""
     # Prepare disassembly engine
     dis_engine = func_heur.machine.dis_engine
     cont = func_heur.cont
     mdis = dis_engine(cont.bin_stream, symbol_pool=cont.symbol_pool)
-    if start_addr is None:
-        start_addr = cont.entry_point
+    if addresses is None:
+        addresses = [cont.entry_point]
     mdis.follow_call = True
 
     # Launch disassembly
     cur_log_level = log_asmbloc.level
     log_asmbloc.setLevel(logging.CRITICAL)
-    cfg = mdis.dis_multibloc(start_addr)
+
+    label2block = {}
+
+    for start_addr in addresses:
+        cfg_temp = mdis.dis_multibloc(start_addr)
+
+        # Merge label2block, take care of disassembly order due to cache
+        for node in cfg_temp.nodes():
+            label2block.setdefault(node.label, node)
     log_asmbloc.setLevel(cur_log_level)
 
     # Find potential addresses
     addresses = {}
-    for bbl in cfg.nodes():
+    for bbl in label2block.itervalues():
         if len(bbl.lines) == 0:
             continue
         last_line = bbl.lines[-1]
         if last_line.is_subcall():
-            for succ in cfg.successors(bbl):
-                if cfg.edges2constraint[(bbl, succ)] != "c_to":
+            for constraint in bbl.bto:
+                if constraint.c_t != "c_to" or \
+                   constraint.label not in label2block:
                     continue
 
+                succ = label2block[constraint.label]
                 # Avoid redirectors
                 if len(succ.lines) == 0 or succ.lines[0].dstflow():
                     continue
@@ -67,7 +77,7 @@ def _virt_find(virt, pattern):
         offset = 0
     for s in sections:
         data = virt.parent.content[s.ph.offset:s.ph.offset + s.ph.filesz]
-        ret = regexp.finditer(pattern, data[offset:])
+        ret = regexp.finditer(data[offset:])
         yield ret, s.ph.vaddr
         offset = 0
 
@@ -110,6 +120,25 @@ class FuncHeuristic(Heuristic):
         super(FuncHeuristic, self).__init__()
         self.cont = cont
         self.machine = machine
+
+    def do_votes(self):
+        """Call recursive_call at the end"""
+        do_recursive = False
+        if recursive_call in self.heuristics:
+            do_recursive = True
+            self.heuristics.remove(recursive_call)
+
+        super(FuncHeuristic, self).do_votes()
+        addresses = self._votes
+
+        if do_recursive:
+            new_addresses = recursive_call(self,
+                                           [addr
+                                            for addr, vote in addresses.iteritems()
+                                            if vote > 0])
+            for addr, vote in new_addresses.iteritems():
+                addresses[addr] = addresses.get(addr, 0) + vote
+        self._votes = addresses
 
     def guess(self):
         for address, value in self.votes.iteritems():
