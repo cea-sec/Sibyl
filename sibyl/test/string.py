@@ -830,7 +830,7 @@ class TestMemset(Test):
     tests = TestSetTest(init1, check1)
 
 
-class TestMemcpy(Test):
+class TestMemmove(Test):
 
     # Test
     my_string1 = "toto\x00titi1tututata123456789"
@@ -855,7 +855,7 @@ class TestMemcpy(Test):
                     self._ensure_mem(self.my_addr2, self.my_string1),
                     ])
 
-    # Test (avoid memmove confusion)
+    # Test 2 (avoid memcpy confusion)
 
     def init2(self):
         self.my_addr1 = self._alloc_string(self.my_string1, write=True)
@@ -867,11 +867,49 @@ class TestMemcpy(Test):
     def check2(self):
         result = self._get_result()
         return all([result == self.my_addr1+self.off,
-                    self._ensure_mem(self.my_addr1, self.overlap)])
+                    self._ensure_mem(self.my_addr1+self.off,
+                                     self.my_string1[:self.cpt])])
+
+    # Test 3 (avoid memcpy confusion)
+
+    def init3(self):
+        self.my_addr1 = self._alloc_string(self.my_string1, write=True)
+
+        self._add_arg(0, self.my_addr1)
+        self._add_arg(1, self.my_addr1+self.off)
+        self._add_arg(2, self.cpt)
+
+    def check3(self):
+        result = self._get_result()
+
+        return all([result == self.my_addr1,
+                    self._ensure_mem(self.my_addr1,
+                                     self.my_string1[self.off:self.off+self.cpt])])
 
     # Properties
+    func = "memmove"
+    tests = TestSetTest(init1, check1) & TestSetTest(init2, check2) & TestSetTest(init3, check3)
+
+
+class TestMemcpy(TestMemmove):
+
+    def check2(self):
+        result = self._get_result()
+        return all([result == self.my_addr1+self.off,
+                    not self._ensure_mem(self.my_addr1+self.off,
+                                         self.my_string1[:self.cpt])])
+    def check3(self):
+        result = self._get_result()
+
+        return all([result == self.my_addr1,
+                    not self._ensure_mem(self.my_addr1,
+                                         self.my_string1[self.off:self.off+self.cpt])])
+    # Properties
     func = "memcpy"
-    tests = TestSetTest(init1, check1) & TestSetTest(init2, check2)
+    # At least one of the test2/test3 may fail for memcpy
+    tests = (TestSetTest(TestMemmove.init1, TestMemmove.check1) &
+             (TestSetTest(TestMemmove.init2, check2) | TestSetTest(TestMemmove.init3, check3)))
+
 
 
 
@@ -983,7 +1021,7 @@ class TestBzero(Test):
 TESTS = [TestStrlen, TestStrnicmp, TestStrcpy, TestStrncpy,
          TestStrcat, TestStrncat, TestStrcmp, TestStrchr,
          TestStrrchr, TestStrnlen, TestStrspn, TestStrpbrk,
-         TestStrtok, TestStrsep, TestMemset, TestMemcpy,
+         TestStrtok, TestStrsep, TestMemset, TestMemmove,
          TestStricmp, TestStrrev, TestMemcmp, TestBzero,
-         TestStrncmp]
+         TestStrncmp, TestMemcpy]
 
