@@ -63,6 +63,8 @@ for c_file in c_files:
     symbols = {}
     for name, symb in elf.getsectionbyname(".symtab").symbols.iteritems():
         offset = symb.value
+        if name.startswith("__"):
+            name = name[2:]
         symbols.setdefault(name, set()).add(offset)
         if name in funcs:
             if name.startswith(custom_tag):
