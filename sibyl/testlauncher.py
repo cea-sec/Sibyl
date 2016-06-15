@@ -119,6 +119,7 @@ class TestLauncher(object):
     def reset_state(self, reset_mem=True):
         self.restore_vm(reset_mem)
         self.jitter.vm.set_exception(0)
+        self.jitter.bs._atomic_mode = False
         self.abi.reset()
 
     def launch_tests(self, test, address, timeout_seconds=0):
@@ -149,7 +150,7 @@ class TestLauncher(object):
                     KeyError, IndexError, TimeoutException) as _:
                 return False
             except Exception as error:
-                self.logger.error("ERROR: %x: %s" % (address, error))
+                self.logger.exception(error)
                 return False
             finally:
                 signal.alarm(0)
