@@ -60,9 +60,11 @@ for c_file in c_files:
     with open(filename) as fdesc:
         elf = ELF(fdesc.read())
 
+    symbols = {}
     for name, symb in elf.getsectionbyname(".symtab").symbols.iteritems():
+        offset = symb.value
+        symbols.setdefault(name, set()).add(offset)
         if name in funcs:
-            offset = symb.value
             if name.startswith(custom_tag):
                 ## Custom tags can be used to write equivalent functions like
                 ## 'my_strlen' for a custom strlen
@@ -104,7 +106,17 @@ for c_file in c_files:
 
     for element in found:
         if element not in to_check:
-            log_error("Bad found: %s (@0x%08x)" % (element[1], element[0]))
+            offset, name = element
+            if offset in symbols.get(name, []):
+                # Present in symtab but not in C source file
+                print "[+] Additionnal found: %s (@0x%08x)" % (name, offset)
+            else:
+                alt_names = [aname
+                             for aname, offsets in symbols.iteritems()
+                             if offset in offsets]
+                log_error("Bad found: %s (@0x%08x -> '%s')" % (name,
+                                                               offset,
+                                                               ",".join(alt_names)))
         else:
             i += 1
     for element in to_check:
