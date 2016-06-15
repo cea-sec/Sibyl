@@ -330,6 +330,62 @@ int my_strlen(const char *s) {
 	return res;
 }
 
+/**
+ * memmove - Copy one area of memory to another
+ * @dest: Where to copy to
+ * @src: Where to copy from
+ * @count: The size of the area.
+ *
+ * Unlike memcpy(), memmove() copes with overlapping areas.
+ */
+void * memmove(void * dest,const void *src,size_t count)
+{
+	char *tmp, *s;
+
+	if (dest <= src) {
+		tmp = (char *) dest;
+		s = (char *) src;
+		while (count--)
+			*tmp++ = *s++;
+		}
+	else {
+		tmp = (char *) dest + count;
+		s = (char *) src + count;
+		while (count--)
+			*--tmp = *--s;
+		}
+
+	return dest;
+}
+
+/**
+ * memcpy - Copy one area of memory to another
+ * @dest: Where to copy to
+ * @src: Where to copy from
+ * @count: The size of the area.
+ *
+ * You should not use this function to access IO space, use memcpy_toio()
+ * or memcpy_fromio() instead.
+ */
+void * memcpy(void * dest,const void *src,size_t count)
+{
+	char *tmp = (char *) dest, *s = (char *) src;
+
+	while (count--)
+		*tmp++ = *s++;
+
+	return dest;
+}
+
+void * my_memcpy(void * dest,const void *src,size_t count)
+{
+	char *tmp = (char *) &dest[count-1] , *s = (char *) &src[count-1];
+
+	while (count--)
+		*tmp-- = *s--;
+
+	return dest;
+}
 
 int main() {
 
