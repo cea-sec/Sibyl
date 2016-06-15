@@ -18,17 +18,19 @@ import argparse
 import logging
 from multiprocessing import cpu_count, Queue, Process
 from miasm2.analysis.machine import Machine
+from miasm2.analysis.binary import Container
 from sibyl.testlauncher import TestLauncher
 from sibyl.test import AVAILABLE_TESTS
 from sibyl.abi import ABIS
 from sibyl.heuristics.arch import ArchHeuristic
+from sibyl.heuristics.func import FuncHeuristic
 
 parser = argparse.ArgumentParser(description="Function guesser")
 parser.add_argument("filename", help="File to load")
 parser.add_argument("abi", help="ABI to used. Available: " + \
                         ",".join([x.__name__ for x in ABIS]))
 parser.add_argument("address", help="Address of the function under test",
-                    nargs="+")
+                    nargs="*")
 parser.add_argument("-a", "--architecture", help="Architecture used. Available: " + \
                     ",".join(Machine.available_machine()))
 parser.add_argument("-t", "--tests", help="Tests to run. Available: all," + \
@@ -91,9 +93,21 @@ else:
         architecture = ArchHeuristic(fdesc).guess()
     if not architecture:
         raise ValueError("Unable to recognize the architecture, please specify it")
+    if not args.quiet:
+        print "Guessed architecture: %s" % architecture
 
 machine = Machine(architecture)
-addresses = [int(addr, 0) for addr in args.address]
+if not args.address:
+    if not args.quiet:
+        print "No function address provided, start guessing"
+
+    cont = Container.from_stream(open(args.filename))
+    fh = FuncHeuristic(cont, machine)
+    addresses = list(fh.guess())
+    if not args.quiet:
+        print "Found %d addresses" % len(addresses)
+else:
+    addresses = [int(addr, 0) for addr in args.address]
 map_addr = int(args.mapping_base, 0)
 if args.monoproc:
     cpu_count = lambda: 1
