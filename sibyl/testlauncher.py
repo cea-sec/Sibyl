@@ -150,7 +150,7 @@ class TestLauncher(object):
                     KeyError, IndexError, TimeoutException) as _:
                 return False
             except Exception as error:
-                self.logger.error("ERROR: %x: %s" % (address, error))
+                self.logger.exception(error)
                 return False
             finally:
                 signal.alarm(0)
