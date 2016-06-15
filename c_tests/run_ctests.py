@@ -78,7 +78,7 @@ for c_file in c_files:
 
     # Launch Sibyl
     print "[+] Launch Sibyl"
-    options = ["-q"]
+    options = ["-q", "-j", "gcc", "-i", "5"]
     if not args.arch_heuristic:
         options += ["-a", "x86_32"]
 
