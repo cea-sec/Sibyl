@@ -1,9 +1,12 @@
 "Module for function address guessing"
 import logging
+import re
 
 from miasm2.core.asmbloc import asm_block_bad, log_asmbloc
 
 from sibyl.heuristics.heuristic import Heuristic
+import sibyl.heuristics.csts as csts
+
 
 def recursive_call(func_heur, start_addr=None):
 
@@ -45,11 +48,59 @@ def recursive_call(func_heur, start_addr=None):
     return addresses
 
 
+def _virt_find(virt, pattern):
+    """Search @pattern in elfesteem @virt instance
+    Inspired from elf_init.virt.find
+    """
+    regexp = re.compile(pattern)
+    offset = 0
+    sections = []
+    for s in virt.parent.ph:
+        s_max = s.ph.memsz
+        if offset < s.ph.vaddr + s_max:
+            sections.append(s)
+
+    if not sections:
+        raise StopIteration
+    offset -= sections[0].ph.vaddr
+    if offset < 0:
+        offset = 0
+    for s in sections:
+        data = virt.parent.content[s.ph.offset:s.ph.offset + s.ph.filesz]
+        ret = regexp.finditer(pattern, data[offset:])
+        yield ret, s.ph.vaddr
+        offset = 0
+
+
+def pattern_matching(func_heur):
+    """Search for function by pattern matching"""
+
+    # Retrieve info
+    architecture = func_heur.machine.name
+    prologs = csts.func_prologs.get(architecture, [])
+    data = func_heur.cont.bin_stream.bin
+
+    addresses = {}
+
+    # Search for function prologs
+
+    pattern = "(" + ")|(".join(prologs) + ")"
+    for find_iter, vaddr_base in _virt_find(data, pattern):
+        for match in find_iter:
+            addr = match.start() + vaddr_base
+            addresses[addr] = 1
+
+    return addresses
+
+
 class FuncHeuristic(Heuristic):
     """Provide heuristic for function start address detection"""
 
     # Enabled passes
-    heuristics = [recursive_call]
+    heuristics = [
+        pattern_matching,
+        recursive_call,
+    ]
 
     def __init__(self, cont, machine):
         """
