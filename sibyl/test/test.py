@@ -132,3 +132,107 @@ class Test(object):
     @staticmethod
     def unpack(element):
         return int(element[::-1].encode("hex"), 16)
+
+
+class TestSet(object):
+    """Stand for a set of test to run, potentially associated to a logic form
+
+    The logic form is represented as a tree, in which nodes are TestSet children
+    instance
+    """
+
+    def __and__(self, ts):
+        return TestSetAnd(self, ts)
+
+    def __or__(self, ts):
+        return TestSetOr(self, ts)
+
+    def execute(self, callback):
+        """Successive execution of test set (like a visitor on the aossicated tree)
+        through @callback
+        @callback: bool func(init, check)
+        """
+        return NotImplementedError("Asbtract method")
+
+
+class TestSetAnd(TestSet):
+    """Logic form : TestSet1 & TestSet2
+
+    Lazy evaluation: if TestSet1 fail, TestSet2 is not launched
+    """
+
+    def __init__(self, ts1, ts2):
+        super(TestSetAnd, self).__init__()
+        assert isinstance(ts1, TestSet)
+        assert isinstance(ts2, TestSet)
+        self._ts1 = ts1
+        self._ts2 = ts2
+
+    def __repr__(self):
+        return "%r TS_AND %r" % (self._ts1, self._ts2)
+
+    def execute(self, callback):
+        if not self._ts1.execute(callback):
+            # Early quit
+            return False
+        else:
+            # First test is valid
+            return self._ts2.execute(callback)
+
+
+class TestSetOr(TestSet):
+    """Logic form : TestSet1 | TestSet2
+
+    Lazy evaluation: if TestSet1 success, TestSet2 is not launched
+    """
+
+    def __init__(self, ts1, ts2):
+        super(TestSetOr, self).__init__()
+        assert isinstance(ts1, TestSet)
+        assert isinstance(ts2, TestSet)
+        self._ts1 = ts1
+        self._ts2 = ts2
+
+    def __repr__(self):
+        return "%r TS_OR %r" % (self._ts1, self._ts2)
+
+    def execute(self, callback):
+        if self._ts1.execute(callback):
+            # Early quit
+            return True
+        else:
+            return self._ts2.execute(callback)
+
+
+class TestSetTest(TestSet):
+    """Terminal node of TestSet
+
+    Stand for a check in a test case
+
+    init: initialization function, called before launching the target address
+    check: checking function, verifying the final state
+    """
+
+    def __init__(self, init, check):
+        super(TestSetTest, self).__init__()
+        self._init = init
+        self._check = check
+
+    def __repr__(self):
+        return "<TST %r,%r>" % (self._init, self._check)
+
+    def execute(self, callback):
+        return callback(self._init, self._check)
+
+
+class TestSetGenerator(TestSet):
+    """TestSet based using a generator to retrieve tests"""
+
+    def __init__(self, generator):
+        self._generator = generator
+
+    def execute(self, callback):
+        for (init, check) in self._generator:
+            if not callback(init, check):
+                return False
+        return True

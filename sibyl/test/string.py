@@ -15,10 +15,10 @@
 # along with Sibyl. If not, see <http://www.gnu.org/licenses/>.
 
 
-from sibyl.test import test
+from sibyl.test.test import Test, TestSetTest
 
 
-class TestStrlen(test.Test):
+class TestStrlen(Test):
 
     # Test1
     my_string = "Hello, w%srld !"
@@ -51,11 +51,11 @@ class TestStrlen(test.Test):
 
     # Properties
     func = "strlen"
-    tests = [(init, check), (init2, check2)]
+    tests = TestSetTest(init, check) & TestSetTest(init2, check2)
 
 
 
-class TestStrnicmp(test.Test):
+class TestStrnicmp(Test):
 
     # Test1
     my_string1 = "Hello, world !"
@@ -97,10 +97,10 @@ class TestStrnicmp(test.Test):
 
     # Properties
     func = "strnicmp"
-    tests = [(init, check), (init2, check2)]
+    tests = TestSetTest(init, check) & TestSetTest(init2, check2)
 
 
-class TestStrcpy(test.Test):
+class TestStrcpy(Test):
 
     # Test
     my_string = "Hello, world !"
@@ -121,11 +121,11 @@ class TestStrcpy(test.Test):
 
     # Properties
     func = "strcpy"
-    tests = [(init, check)]
+    tests = TestSetTest(init, check)
 
 
 
-class TestStrncpy(test.Test):
+class TestStrncpy(Test):
 
     def my_init(self, dest_size, src_string, size):
         self.my_addr = self._alloc_string(src_string)
@@ -169,10 +169,10 @@ class TestStrncpy(test.Test):
 
     # Properties
     func = "strncpy"
-    tests = [(init, check), (init2, check2)]
+    tests = TestSetTest(init, check) & TestSetTest(init2, check2)
 
 
-class TestStrcat(test.Test):
+class TestStrcat(Test):
 
     # Test
     my_string = "Hello,"
@@ -198,10 +198,10 @@ class TestStrcat(test.Test):
 
     # Properties
     func = "strcat"
-    tests = [(init, check)]
+    tests = TestSetTest(init, check)
 
 
-class TestStrncat(test.Test):
+class TestStrncat(Test):
 
     # Test
     my_string = "Hello,"
@@ -228,10 +228,10 @@ class TestStrncat(test.Test):
 
     # Properties
     func = "strncat"
-    tests = [(init, check)]
+    tests = TestSetTest(init, check)
 
 
-class TestStrcmp(test.Test):
+class TestStrcmp(Test):
 
     def my_check(self, addr1, addr2, str1, str2):
         result = self._get_result()
@@ -305,11 +305,11 @@ class TestStrcmp(test.Test):
 
     # Properties
     func = "strcmp"
-    tests = [(init1, check1), (init2, check2),
-             (init3, check3), (init4, check4)]
+    tests = TestSetTest(init1, check1) & TestSetTest(init2, check2) & \
+            TestSetTest(init3, check3) & TestSetTest(init4, check4)
 
 
-class TestStrncmp(test.Test):
+class TestStrncmp(Test):
 
     def my_check(self, addr1, addr2, l, str1, str2):
         result = self._get_result()
@@ -409,12 +409,12 @@ class TestStrncmp(test.Test):
 
     # Properties
     func = "strncmp"
-    tests = [(init1, check1), (init2, check2),
-             (init3, check3), (init4, check4),
-             (init5, check5)]
+    tests = TestSetTest(init1, check1) & TestSetTest(init2, check2) & \
+            TestSetTest(init3, check3) & TestSetTest(init4, check4) & \
+            TestSetTest(init5, check5)
 
 
-class TestStricmp(test.Test):
+class TestStricmp(Test):
 
     def my_check(self, addr1, addr2, str1, str2):
         result = self._get_result()
@@ -488,11 +488,11 @@ class TestStricmp(test.Test):
 
     # Properties
     func = "stricmp"
-    tests = [(init1, check1), (init2, check2),
-             (init3, check3), (init4, check4)]
+    tests = TestSetTest(init1, check1) & TestSetTest(init2, check2) & \
+            TestSetTest(init3, check3) & TestSetTest(init4, check4)
 
 
-class TestStrchr(test.Test):
+class TestStrchr(Test):
 
     # Test
     my_string = "Hello,"
@@ -525,9 +525,9 @@ class TestStrchr(test.Test):
 
     # Properties
     func = "strchr"
-    tests = [(init1, check1), (init2, check2)]
+    tests = TestSetTest(init1, check1) & TestSetTest(init2, check2)
 
-class TestStrrchr(test.Test):
+class TestStrrchr(Test):
 
     # Test
     my_string = "Hello, hello, "
@@ -559,9 +559,9 @@ class TestStrrchr(test.Test):
 
     # Properties
     func = "strrchr"
-    tests = [(init1, check1), (init2, check2)]
+    tests = TestSetTest(init1, check1) & TestSetTest(init2, check2)
 
-class TestStrnlen(test.Test):
+class TestStrnlen(Test):
 
     # Test1
     my_string = "Hello, w%srld !"
@@ -598,9 +598,9 @@ class TestStrnlen(test.Test):
 
     # Properties
     func = "strnlen"
-    tests = [(init1, check1), (init2, check2)]
+    tests = TestSetTest(init1, check1) & TestSetTest(init2, check2)
 
-class TestStrspn(test.Test):
+class TestStrspn(Test):
 
     def my_check(self, addr1, addr2, str1, str2):
         result = self._get_result()
@@ -657,10 +657,10 @@ class TestStrspn(test.Test):
 
     # Properties
     func = "strspn"
-    tests = [(init1, check1), (init2, check2), (init3, check3)]
+    tests = TestSetTest(init1, check1) & TestSetTest(init2, check2) & TestSetTest(init3, check3)
 
 
-class TestStrpbrk(test.Test):
+class TestStrpbrk(Test):
 
     def my_check(self, addr1, addr2, str1, str2, res_found):
         result = self._get_result()
@@ -720,9 +720,9 @@ class TestStrpbrk(test.Test):
 
     # Properties
     func = "strpbrk"
-    tests = [(init1, check1), (init2, check2), (init3, check3)]
+    tests = TestSetTest(init1, check1) & TestSetTest(init2, check2) & TestSetTest(init3, check3)
 
-class TestStrtok(test.Test):
+class TestStrtok(Test):
 
     def reset(self):
         # Do not reset memory
@@ -758,10 +758,10 @@ class TestStrtok(test.Test):
 
     # Properties
     func = "strtok"
-    tests = [(init1, check1), (init2, check2)]
+    tests = TestSetTest(init1, check1) & TestSetTest(init2, check2)
 
 
-class TestStrsep(test.Test):
+class TestStrsep(Test):
 
     def reset(self):
         # Do not reset memory
@@ -802,10 +802,10 @@ class TestStrsep(test.Test):
 
     # Properties
     func = "strsep"
-    tests = [(init1, check1), (init2, check2)]
+    tests = TestSetTest(init1, check1) & TestSetTest(init2, check2)
 
 
-class TestMemset(test.Test):
+class TestMemset(Test):
 
     # Test
     my_string1 = "\x11"*0x9
@@ -827,9 +827,10 @@ class TestMemset(test.Test):
 
     # Properties
     func = "memset"
-    tests = [(init1, check1)]
+    tests = TestSetTest(init1, check1)
 
-class TestMemcpy(test.Test):
+
+class TestMemcpy(Test):
 
     # Test
     my_string1 = "toto\x00titi1tututata123456789"
@@ -870,11 +871,11 @@ class TestMemcpy(test.Test):
 
     # Properties
     func = "memcpy"
-    tests = [(init1, check1), (init2, check2)]
+    tests = TestSetTest(init1, check1) & TestSetTest(init2, check2)
 
 
 
-class TestStrrev(test.Test):
+class TestStrrev(Test):
 
     # Test1
     my_string = "Hello, w%srld !"
@@ -893,11 +894,11 @@ class TestStrrev(test.Test):
 
     # Properties
     func = "strrev"
-    tests = [(init, check)]
+    tests = TestSetTest(init, check)
 
 
 
-class TestMemcmp(test.Test):
+class TestMemcmp(Test):
 
     def my_check(self, addr1, addr2, str1, str2):
         result = self._get_result()
@@ -955,10 +956,10 @@ class TestMemcmp(test.Test):
 
     # Properties
     func = "memcmp"
-    tests = [(init1, check1), (init2, check2), (init3, check3)]
+    tests = TestSetTest(init1, check1) & TestSetTest(init2, check2) & TestSetTest(init3, check3)
 
 
-class TestBzero(test.Test):
+class TestBzero(Test):
 
     # Test1
     my_string = "Hello \x00, w%srld !, hello world"
@@ -974,7 +975,7 @@ class TestBzero(test.Test):
 
     # Properties
     func = "bzero"
-    tests = [(init, check)]
+    tests = TestSetTest(init, check)
 
 
 

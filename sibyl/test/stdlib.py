@@ -15,10 +15,10 @@
 # along with Sibyl. If not, see <http://www.gnu.org/licenses/>.
 
 
-from sibyl.test import test
+from sibyl.test.test import Test, TestSetTest
 
 
-class TestAbs(test.Test):
+class TestAbs(Test):
 
     value = 42
 
@@ -40,10 +40,10 @@ class TestAbs(test.Test):
 
     # Properties
     func = "abs"
-    tests = [(init1, check1), (init2, check2)]
+    tests = TestSetTest(init1, check1) & TestSetTest(init2, check2)
 
 
-class TestA64l(test.Test):
+class TestA64l(Test):
 
     my_string = "v/"
     value = 123
@@ -60,10 +60,10 @@ class TestA64l(test.Test):
 
     # Properties
     func = "a64l"
-    tests = [(init, check)]
+    tests = TestSetTest(init, check)
 
 
-class TestAtoi(test.Test):
+class TestAtoi(Test):
 
     my_string = "44"
     my_string2 = "127.0.0.1"
@@ -95,8 +95,7 @@ class TestAtoi(test.Test):
 
     # Properties
     func = "atoi"
-    tests = [(init1, check1), (init2, check2)]
-
+    tests = TestSetTest(init1, check1) & TestSetTest(init2, check2)
 
 
 TESTS = [TestAbs, TestA64l, TestAtoi]

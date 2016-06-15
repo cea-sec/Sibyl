@@ -122,15 +122,18 @@ class TestLauncher(object):
         self.abi.reset()
 
     def launch_tests(self, test, address, timeout_seconds=0):
+        # Variables to remind between two "launch_test"
+        self._temp_reset_mem = True
+
         # Reset between functions
-        good = True
-        reset_mem = True
         test.reset_full()
 
-        # Launch subtests
-        for (init, check) in test.tests:
+        # Callback to launch
+        def launch_test(init, check):
+            """Launch a test associated with @init, @check"""
+
             # Reset VM
-            self.reset_state(reset_mem=reset_mem)
+            self.reset_state(reset_mem=self._temp_reset_mem)
             test.reset()
 
             # Prepare VM
@@ -144,24 +147,24 @@ class TestLauncher(object):
                 self.jitter.continue_run()
             except (AssertionError, RuntimeError, ValueError,
                     KeyError, IndexError, TimeoutException) as _:
-                good = False
+                return False
             except Exception as error:
                 self.logger.error("ERROR: %x: %s" % (address, error))
-                good = False
+                return False
             finally:
                 signal.alarm(0)
 
-            if not good:
-                break
-
-            if check(test) is not True:
-                good = False
-                break
+            # Check result
+            to_ret = check(test)
 
             # Update flags
-            reset_mem = test.reset_mem
+            self._temp_reset_mem = test.reset_mem
 
-        if good:
+            return to_ret
+
+        # Launch subtests
+        status = test.tests.execute(launch_test)
+        if status:
             self._possible_funcs.append(test.func)
 
     def run(self, address, *args, **kwargs):
