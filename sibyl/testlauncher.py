@@ -79,6 +79,7 @@ class TestLauncher(object):
         # Restore memory
         if reset_mem:
             self.jitter.vm.reset_memory_page_pool()
+            self.jitter.vm.reset_code_bloc_pool()
             for addr, metadata in self.vm_mem.iteritems():
                 self.jitter.vm.add_memory_page(addr,
                                                   metadata["access"],
@@ -119,6 +120,7 @@ class TestLauncher(object):
     def reset_state(self, reset_mem=True):
         self.restore_vm(reset_mem)
         self.jitter.vm.set_exception(0)
+        self.jitter.cpu.set_exception(0)
         self.jitter.bs._atomic_mode = False
         self.abi.reset()
 

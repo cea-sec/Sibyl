@@ -68,7 +68,7 @@ def do_test(filename, addr_queue, machine, abicls, tests_cls, map_addr, quiet,
         if possible_funcs:
             print "0x%08x : %s" % (address, ",".join(tl.possible_funcs))
         elif not quiet:
-            print "No candidate found"
+            print "No candidate found for 0x%08x" % address
 
 # Fake Process
 class FakeProcess(object):
