@@ -2,8 +2,16 @@
 import os
 import re
 import subprocess
+from argparse import ArgumentParser
 
 from elfesteem.elf_init import ELF
+
+parser = ArgumentParser("Regression tester")
+parser.add_argument("-f", "--func-heuristic", action="store_true",
+                    help="Enable function addresses detection heuristics")
+parser.add_argument("-a", "--arch-heuristic", action="store_true",
+                    help="Enable architecture detection heuristics")
+args = parser.parse_args()
 
 custom_tag = "my_"
 whitelist_funcs = ["main"]
@@ -66,9 +74,13 @@ for c_file in c_files:
 
     # Launch Sibyl
     print "[+] Launch Sibyl"
-    cmd = ["python", "../find.py", filename, "ABIStdCall_x86_32",
-           "-q"]
-    cmd += [hex(addr) for addr, f in to_check]
+    options = ["-q"]
+    if not args.arch_heuristic:
+        options += ["-a", "x86_32"]
+
+    cmd = ["python", "../find.py"] + options + [filename, "ABIStdCall_x86_32"]
+    if not args.func_heuristic:
+        cmd += [hex(addr) for addr, f in to_check]
     print " ".join(cmd)
     sibyl = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)

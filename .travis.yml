@@ -38,4 +38,5 @@ before_script:
 - "export SIBYL=$(pwd)/Sibyl;"
 script:
 - "cd $SIBYL/c_tests && python run_ctests.py;"
+- "cd $SIBYL/c_tests && python run_ctests.py -f -a;"
 - "cd $SIBYLTEST && ./run.sh;"
