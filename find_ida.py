@@ -60,6 +60,11 @@ def parse_output(command_line):
 
 
 def handle_found(addr, candidates):
+    """Callback when @candidates have been found for a given address @addr.
+    Print and add an IDA comment at @addr
+    @addr: address of the function analyzed
+    @candidates: list of string of possible matched functions
+    """
     print "Found %s at %s" % (",".join(candidates), hex(addr))
     SetFunctionCmt(addr, "[Sibyl] %s?" % ",".join(candidates), False)
 
@@ -131,6 +136,9 @@ def launch_on_funcs(architecture, abi, funcs, test_set, map_addr=None,
 
 # IDA Interfacing
 class sibylForm(Form):
+    """IDA Form to launch analysis on one or many function, according to a few
+customizable parameters
+    """
 
     def __init__(self):
 
