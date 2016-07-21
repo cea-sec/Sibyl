@@ -13,7 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Sibyl. If not, see <http://www.gnu.org/licenses/>.
-
 import sys
 import os
 import subprocess
@@ -22,53 +21,61 @@ import time
 from idaapi import *
 import idautils
 
-identify_binary = ""
+from sibyl.test import AVAILABLE_TESTS
+
+# Find SIBYL find.py
+cur_script = sys.argv[0]
+identify_binary = os.path.join(os.path.dirname(cur_script), "find.py")
 env = os.environ
 
+# Sibyl launching
+def parse_output(command_line):
+    """Parse the output of find.py"""
 
-def identify_help():
-    """Sibyl IDA API helper"""
-    find = subprocess.Popen(["python", identify_binary, "-h"],
-                            stdout = subprocess.PIPE,
-                            stderr = subprocess.PIPE,
-                            env = env)
-    res = find.communicate()[0].split("\n")
+    process = subprocess.Popen(command_line,
+                               stdout=subprocess.PIPE,
+                               env=env)
 
-    s = ""
-    beg,end = 0,0
-    for i, l in enumerate(res):
-        if l.strip().startswith("architecture"):
-            beg = i
-        if l.strip().startswith("address"):
-            end = i
-    info = "\n".join(res[beg:end])
+    while True:
+        line = process.stdout.readline()
+        line = line.strip()
 
-    print("""Function identifier:
- - identify_help(): print this help
- - identify_me(architecture, abi, (optionals)): candidates for current
-function
- - identify_all(architecture, abi, (optionals)): candidates for all
-functions
+        if not line and process.poll() != None:
+            # No more output, end reached
+            break
 
-Optional arguments are:
-@map_addr: the base address where the binary has to be loaded if format is not
- recognized
-@jitter: jitter engine to use (tcc, llvm, python)
-@buf_size: number of argument to pass to each instance of sibyl. High number
-means speed; low number means less ressources and higher frequency of report
-@test_set: list of test sets to run
+        if " : " not in line:
+            print "Unable to parse '%s'" % line
+            continue
 
-Architecture and ABI available are displayed below:
-""")
-    print info
+        infos = line.split(" : ")
+        addr = int(infos[0], 0)
+        candidates = infos[1].split(",")
+        yield addr, candidates
 
 
-def launch_on_funcs(architecture, abi, funcs, map_addr=None, jitter="tcc",
-                    buf_size=2000, test_set=["all"]):
+    if process.returncode != 0:
+        # An error occured
+        raise RuntimeError("An error occured, please consult the console")
+
+
+def handle_found(addr, candidates):
+    """Callback when @candidates have been found for a given address @addr.
+    Print and add an IDA comment at @addr
+    @addr: address of the function analyzed
+    @candidates: list of string of possible matched functions
+    """
+    print "Found %s at %s" % (",".join(candidates), hex(addr))
+    SetFunctionCmt(addr, "[Sibyl] %s?" % ",".join(candidates), False)
+
+
+def launch_on_funcs(architecture, abi, funcs, test_set, map_addr=None,
+                    jitter="tcc", buf_size=2000):
     """Launch identification on functions.
     @architecture: str standing for current architecture
     @abi: str standing for expected ABI
     @funcs: list of function addresses (int) to check
+    @test_set: list of test sets to run
     Optional arguments:
     @map_addr: (optional) the base address where the binary has to be loaded if
     format is not recognized
@@ -76,7 +83,6 @@ def launch_on_funcs(architecture, abi, funcs, map_addr=None, jitter="tcc",
     @buf_size: (optional) number of argument to pass to each instance of sibyl.
     High number means speed; low number means less ressources and higher
     frequency of report
-    @test_set: (optional) list of test sets to run
     """
 
     # Check Sibyl availability
@@ -97,21 +103,23 @@ def launch_on_funcs(architecture, abi, funcs, map_addr=None, jitter="tcc",
 
     # Launch identification
     print "Launch identification on %d function(s)" % nb_func
+    options = ["-j", jitter, "-q", "-t"] + test_set + ["-a", architecture]
+    options += add_map
+    res = {}
+
     for i in xrange(0, len(funcs), buf_size):
         # Build command line
-        addresses = map(hex, funcs[i:i + buf_size])
-        command_line = ["python", identify_binary, "-j", jitter, "-q"]
-        command_line += add_map
-        command_line += [filename, architecture, abi]
+        addresses = funcs[i:i + buf_size]
+        command_line = ["python", identify_binary]
+        command_line += options
+        command_line += [filename, abi]
         command_line += addresses
-        command_line += ["-t"] + test_set
 
         # Call Sibyl and keep only stdout
-        find = subprocess.Popen(command_line,
-                                stdout = subprocess.PIPE,
-                                stderr = subprocess.PIPE,
-                                env = env)
-        res = find.communicate()[0]
+        for addr, candidates in parse_output(command_line):
+            handle_found(addr, candidates)
+            res[addr] = candidates
+            nb_found += 1
 
         # Print current status and estimated time
         curtime = (time.time() - starttime)
@@ -121,26 +129,189 @@ def launch_on_funcs(architecture, abi, funcs, map_addr=None, jitter="tcc",
         print "Current: %.02f%% (sub_%s)| Estimated time remaining: %.02fs" % (((100. /nb_func) * maxi),
                                                                                      addresses[-1],
                                                                                      remaintime)
-        # Print results
-        if res.strip():
-            print res.strip()
-        nb_found += res.count(":")
 
     print "Finished ! Found %d candidates in %.02fs" % (nb_found, time.time() - starttime)
+    return res
 
 
-def identify_all(architecture, abi, *args, **kwargs):
-    """Find candidates for all functions detected"""
-    funcs = list(Functions())
-    launch_on_funcs(architecture, abi, funcs, *args, **kwargs)
+# IDA Interfacing
+class sibylForm(Form):
+    """IDA Form to launch analysis on one or many function, according to a few
+customizable parameters
+    """
+
+    def __init__(self):
+
+        addr = ScreenEA()
+        func = idaapi.get_func(addr)
+
+        tests_choice = "\n".join(map(lambda x: "<%s:{r%s}>" % (x, x), AVAILABLE_TESTS))
+        Form.__init__(self,
+r"""BUTTON YES* Launch
+BUTTON CANCEL NONE
+Sibyl Settings
+
+{FormChangeCb}
+Apply on:
+<One function:{rOneFunc}>
+<All functions:{rAllFunc}>{cMode}>
+
+<Targeted function:{cbFunc}>
+
+Testsets to use:
+%s{cTest}>
+
+""" % tests_choice, {
+    'FormChangeCb': Form.FormChangeCb(self.OnFormChange),
+    'cMode': Form.RadGroupControl(("rOneFunc", "rAllFunc")),
+    'cTest': Form.ChkGroupControl(map(lambda x: "r%s" % x,
+                                      AVAILABLE_TESTS),
+                                  value=(1 << len(AVAILABLE_TESTS)) - 1),
+    'cbFunc': Form.DropdownListControl(
+        items=self.available_funcs,
+        readonly=False,
+        selval="0x%x" % func.startEA),
+}
+        )
+
+        self.Compile()
+
+    def OnFormChange(self, fid):
+        if fid == self.cMode.id:
+            enable = self.GetControlValue(self.cMode) == 0
+            self.EnableField(self.cbFunc, enable)
+        return 1
+
+    @property
+    def available_funcs(self):
+        return map(lambda x:"0x%x" % x, Functions())
+
+    @property
+    def funcs(self):
+        if self.cMode.value == 0:
+            return [self.cbFunc.value]
+        else:
+            return self.available_funcs
+
+    IDAarch2MiasmArch = {
+        "msp430": "msp430",
+        "mipsl": "mips32l",
+        "mipsb": "mips32b",
+    }
+
+    @property
+    def architecture(self):
+        """Return the IDA guessed processor
+        Ripped from Miasm2 / examples / ida / utils
+        """
+
+        processor_name = GetLongPrm(INF_PROCNAME)
+
+        if processor_name in self.IDAarch2MiasmArch:
+            name = self.IDAarch2MiasmArch[processor_name]
+
+        elif processor_name == "metapc":
+
+            # HACK: check 32/64 using INF_START_SP
+            max_size = GetLongPrm(INF_START_SP)
+            if max_size == 0x80:  # TODO XXX check
+                name = "x86_16"
+            elif max_size == 0xFFFFFFFF:
+                name = "x86_32"
+                name = "x86_32"
+            elif max_size == 0xFFFFFFFFFFFFFFFF:
+                name = "x86_64"
+            else:
+                raise ValueError('cannot guess 32/64 bit! (%x)' % max_size)
+        elif processor_name == "ARM":
+            # TODO ARM/thumb
+            # hack for thumb: set armt = True in globals :/
+            # set bigendiant = True is bigendian
+            is_armt = globals().get('armt', False)
+            is_bigendian = globals().get('bigendian', False)
+            if is_armt:
+                if is_bigendian:
+                    name = "armtb"
+                else:
+                    name = "armtl"
+            else:
+                if is_bigendian:
+                    name = "armb"
+                else:
+                    name = "arml"
+
+        else:
+            print repr(processor_name)
+            raise ValueError("Unknown corresponding architecture")
+
+        return name
+
+    IDAABI2SibylABI = {
+        "x86_64": "ABI_AMD64",
+        "arml": "ABI_ARM",
+        "mips32l": "ABI_MIPS_O32",
+        "x86_32": {
+            "__cdecl": "ABIStdCall_x86_32",
+            "__stdcall": "ABIStdCall_x86_32",
+            "__fastcall": "ABIFastCall_x86_32",
+        },
+    }
+
+    # int __cdecl(int, int) -> __cdecl
+    gtype_matcher = re.compile(".+ ([^\(]+)\([^\)]*\)")
+
+    @property
+    def abi(self):
+        """Return the IDA guessed ABI
+        """
+
+        architecture = self.architecture
+
+        available_abis = self.IDAABI2SibylABI.get(architecture, None)
+        if not available_abis:
+            raise ValueError("No ABI available for architecture %s" % architecture)
+
+        if isinstance(available_abis, str):
+            return available_abis
+
+        # Search for IDA guessed type
+        for func_addr in Functions():
+            gtype = GuessType(func_addr)
+            if gtype is None:
+                continue
+            match = self.gtype_matcher.match(gtype)
+            if match is None:
+                continue
+            calling_conv = match.group(1)
+            abi = available_abis.get(calling_conv, None)
+            if abi is None:
+                raise ValueError("No ABI matching %s" % calling_conv)
+            return abi
+        raise ValueError("Unable to guess ABI")
+
+    @property
+    def tests(self):
+        """Return the list of test to launch"""
+        bitfield = self.cTest.value
+        if bitfield == (1 << len(AVAILABLE_TESTS)) - 1:
+            return ["all"]
+        tests = []
+        for i, test in enumerate(AVAILABLE_TESTS):
+            if bitfield & (1 << i):
+                tests.append(test)
+        return tests
 
 
-def identify_me(architecture, abi, *args, **kwargs):
-    """Find candidates for current function"""
-    funcs = [ScreenEA()]
-    launch_on_funcs(architecture, abi, funcs, *args, **kwargs)
+# Main
+settings = sibylForm()
+settings.Execute()
 
+abis = {"x86_32": "ABIStdCall_x86_32",
+        "arml": "ABI_ARM"}
 
-# Print helper
-identify_help()
+sibyl_res = launch_on_funcs(settings.architecture,
+                            settings.abi,
+                            settings.funcs,
+                            settings.tests)
+print "Results are also available in 'sibyl_res'"
 
