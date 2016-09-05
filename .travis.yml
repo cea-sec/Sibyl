@@ -31,12 +31,13 @@ before_script:
 - "python setup.py build build_ext -I$(pwd)/../virtualenv/include -L$(pwd)/../virtualenv/tinycc"
 - "python setup.py install"
 - "cd ..;"
-# get tests
-- "git clone https://github.com/commial/Sibyl-tests sibyl-tests;"
+# get and prepare tests
+- "git clone https://github.com/graux-pierre/Sibyl-tests sibyl-tests && cd sibyl-tests && git checkout learning_tests && cd ..;"
 # prepare env
 - "export SIBYLTEST=$(pwd)/sibyl-tests"
 - "export SIBYL=$(pwd)/Sibyl;"
 script:
-- "cd $SIBYL/c_tests && python run_ctests.py;"
-- "cd $SIBYL/c_tests && python run_ctests.py -f -a;"
+- "cd $SIBYLTEST/learned_binaries && python run_learn_tests.py"
+- "cd $SIBYL/c_tests && python run_all_tests.py;"
+- "cd $SIBYL/c_tests && python run_all_tests.py -f -a;"
 - "cd $SIBYLTEST && ./run.sh;"

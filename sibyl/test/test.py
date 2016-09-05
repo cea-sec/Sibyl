@@ -53,6 +53,21 @@ class Test(object):
         self.alloc_pool = 0x20000000
         self.abi = abi
 
+    def _reserv_mem(self, size, read=True, write=False):
+        right = 0
+        if read:
+            right |= PAGE_READ
+        if write:
+            right |= PAGE_WRITE
+
+        # Memory alignement
+        size += 16 - size % 16
+
+        to_ret = self.alloc_pool
+        self.alloc_pool += size + 1
+
+        return to_ret
+
     def __alloc_mem(self, mem, read=True, write=False):
         right = 0
         if read:
@@ -126,7 +141,7 @@ class Test(object):
             element >>= 8
         if len(out) > size / 8:
             raise ValueError("To big to be packed")
-        out = "\x00" * ((size / 8) - len(out)) + out
+        out = out + "\x00" * ((size / 8) - len(out))
         return out
 
     @staticmethod
