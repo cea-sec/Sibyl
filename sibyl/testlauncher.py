@@ -110,7 +110,7 @@ class TestLauncher(object):
         # nor passed to Jitted code in case of registration with signal API
         if jit_engine == "python":
             signal.signal(signal.SIGALRM, TestLauncher._timeout)
-        elif jit_engine in ["llvm", "tcc"]:
+        elif jit_engine in ["llvm", "tcc", "gcc"]:
             self.jitter.vm.set_alarm()
 
     def init_abi(self, abicls):
