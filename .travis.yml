@@ -31,8 +31,8 @@ before_script:
 - "python setup.py build build_ext -I$(pwd)/../virtualenv/include -L$(pwd)/../virtualenv/tinycc"
 - "python setup.py install"
 - "cd ..;"
-# get and prepare tests
-- "git clone https://github.com/graux-pierre/Sibyl-tests sibyl-tests && cd sibyl-tests && git checkout learning_tests && cd ..;"
+# get tests
+- "git clone https://github.com/commial/Sibyl-tests sibyl-tests;"
 # prepare env
 - "export SIBYLTEST=$(pwd)/sibyl-tests"
 - "export SIBYL=$(pwd)/Sibyl;"
