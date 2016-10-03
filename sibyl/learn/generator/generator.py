@@ -21,13 +21,10 @@ class Generator(object):
         self.nb_arg = nb_arg
         self.learnexceptiontext = learnexceptiontext
         self.abicls = abicls
+        self.printer = Printer()
 
         self.ira = Machine(machine).ira()
         self.ptr_size = self.ira.sizeof_pointer()/8
-
-    @classmethod
-    def addShiftLvl(cls, s):
-        return ('    ' + s).replace('\n', '\n    ').rstrip(' ')
 
     def generate_test(self):
         '''Abstract method that should return the string corresponding to the code of the init test'''
@@ -37,7 +34,7 @@ class Generator(object):
 class Printer(object):
 
     default_indentation_size = 4
-    
+
     def __init__(self, indentation_size=default_indentation_size):
         self._indentation_size = indentation_size
         self._indentation_level = 0
@@ -58,7 +55,16 @@ class Printer(object):
     def add_lvl(self, n=1):
         self._indentation_level += self._indentation_size * n
         self._whitespace = " "*self._indentation_level
-        
+
     def add_block(self, block):
         self._print += (self._whitespace + block).replace('\n', '\n'+self._whitespace).rstrip(' ')
-        
+
+    def add_lower_block(self, block, n=1):
+        self.sub_lvl(n)
+        self.add_block(block)
+        self.add_lvl(n)
+
+    def add_upper_block(self, block, n=1):
+        self.add_lvl(n)
+        self.add_block(block)
+        self.sub_lvl(n)

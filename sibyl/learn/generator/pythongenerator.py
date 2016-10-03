@@ -9,24 +9,20 @@ from miasm2.jitter.csts import PAGE_READ, PAGE_WRITE
 from sibyl.learn.learnexception import LearnException
 
 class Test{funcname}(Test):
+'''
+classAttribTemplate = '''
+func = "{funcname}"
+tests = {testList}
+'''
 
-{initDef}
-
-{funcDef}
-
-    func = "{funcname}"
-    tests = {testList}
-
-TESTS = [Test{funcname}]'''
-
-initDefTemplate = '''    def __init__(self, *args, **kwargs):
-        super(Test{funcname}, self).__init__(*args, **kwargs)
-        {printedException}
+initDefTemplate = '''def __init__(self, *args, **kwargs):
+    super(Test{funcname}, self).__init__(*args, **kwargs)
+    {printedException}
 '''
 
 testListElem = " TestSetTest(init{0}, check{0}) "
 
-funcDefTemplate = "def {}{}(self):\n{}\n"
+funcDefTemplate = "def {}{}(self):\n"
 
 memoryAllocTemplate = '''
 # Memory allocation
@@ -125,27 +121,28 @@ class PythonGenerator(Generator):
 
     def generate_test(self):
 
-        if self.learnexceptiontext:
-            printedException = ('print "' + "\\n".join(["REPLAY ERROR: " + e for e in self.learnexceptiontext]) + '"') if self.learnexceptiontext else ""
+        self.printer.add_block(classDefTemplate.format(funcname=self.functionname))
 
-            initDef = initDefTemplate.format(funcname=self.functionname,
-                                             printedException=printedException)
-        else:
-            initDef = ""
+        self.printer.add_lvl()
+
+        if self.learnexceptiontext:
+            printedException = ('print "' + "\\n".join(["REPLAY ERROR: " + e for e in self.learnexceptiontext]) + '"')
+
+            self.printer.add_block(initDefTemplate.format(funcname=self.functionname, printedException=printedException))
+
+        for i, snapshot in enumerate(self.trace, 1):
+            self.printer.add_block("\n")
+            self.generate_init(snapshot, i)
+            self.printer.add_block("\n")
+            self.generate_check(snapshot, i)
+            self.printer.add_block("\n")
 
         testList = "&".join([testListElem.format(i)
                             for i in xrange(1, len(self.trace) + 1)])
+        self.printer.add_block(classAttribTemplate.format(funcname=self.functionname, testList=testList))
 
-        testFuncDefinitions = ""
-        for i, snapshot in enumerate(self.trace, 1):
-            testFuncDefinitions += self.addShiftLvl(
-                self.generate_init(snapshot, i) + '\n\n' + self.generate_check(snapshot, i))
+        return self.printer.dump()
 
-        return classDefTemplate.format(funcname=self.functionname,
-                                       initDef=initDef,
-                                       testList=testList,
-                                       funcDef=testFuncDefinitions)
-    
     def generate_init(self, snapshot, number):
         '''Return the string corresponding to the code of the init function'''
         argList = []
@@ -209,24 +206,32 @@ class PythonGenerator(Generator):
 
         addrList = [(addr, mem.data, mem.access) for addr, mem in memI.iteritems()]
 
-        body = ""
+        self.printer.add_block(funcDefTemplate.format("init", number))
+
+        self.printer.add_lvl()
+
+        addPass = True
 
         if addrList:
-            body += memoryAllocTemplate.format(
+            self.printer.add_block(memoryAllocTemplate.format(
             allocList=",\n\t".join(addrTupleStr(addr) for addr in addrList),
             segSize=", ".join(str(size) for size in seg_sizes),
-            n=number)
+            n=number))
+            addPass = False
 
         if refsInMem:
-            body += refUpdateTemplate.format(refs=repr(refsInMem), n=number)
+            self.printer.add_block(refUpdateTemplate.format(refs=repr(refsInMem), n=number))
+            addPass = False
 
         if argList:
-            body += argInitTemplate.format(argList=", ".join(argListStr(arg) for arg in argList), n=number)
+            self.printer.add_block(argInitTemplate.format(argList=", ".join(argListStr(arg) for arg in argList), n=number))
+            addPass = False
 
-        if not body:
-            body = "pass"
+        if addPass:
+            self.printer.add_block("pass")
 
-        return funcDefTemplate.format("init", number, self.addShiftLvl(body))
+        self.printer.sub_lvl()
+
 
     def generate_check(self, snapshot, number):
         '''Return the string corresponding to the code of the check function'''
@@ -275,13 +280,18 @@ class PythonGenerator(Generator):
         if res is None:
             res = snapshot.output_reg[self.ira.ret_reg.name]
 
-        body = checkResultTemplate.format(expectedResult=res, n=number)
+        self.printer.add_block(funcDefTemplate.format("check", number))
+
+        self.printer.add_lvl()
+
+        self.printer.add_block(checkResultTemplate.format(expectedResult=res, n=number))
 
         if addrList:
             if refsInMem:
-                body += checkAllocWithRefTemplate.format(addrList=addrList, n=number,refs=repr(refsInMem))
+                self.printer.add_block(checkAllocWithRefTemplate.format(addrList=addrList, n=number,refs=repr(refsInMem)))
             else:
-                body += checkAllocWithoutRefTemplate.format(addrList=addrList, n=number)
-        body += "\nreturn ret"
+                self.printer.add_block(checkAllocWithoutRefTemplate.format(addrList=addrList, n=number))
 
-        return funcDefTemplate.format("check", number, self.addShiftLvl(body))
+        self.printer.add_block("\nreturn ret")
+
+        self.printer.sub_lvl()
