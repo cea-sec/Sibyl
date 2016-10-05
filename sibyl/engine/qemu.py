@@ -2,9 +2,6 @@ from miasm2.core.utils import pck32, pck64
 from miasm2.jitter.csts import PAGE_READ, PAGE_WRITE
 try:
     import unicorn
-    from unicorn.x86_const import *
-    from unicorn.arm_const import *
-    from unicorn.mips_const import *
 except ImportError:
     unicorn = None
 
@@ -202,7 +199,7 @@ class UcWrapCPU(object):
             self.mu.reg_write(reg, 0)
 
     def __setattr__(self, name, value):
-        if name in ["mu", "logger"]:
+        if name in ["mu", "logger", "regs", "pc_reg_name", "pc_reg_value"]:
             super(UcWrapCPU, self).__setattr__(name, value)
         elif name in self.regs:
             self.mu.reg_write(self.regs[name], value)
@@ -233,129 +230,169 @@ class UcWrapCPU(object):
 
 class UcWrapCPU_x86_32(UcWrapCPU):
 
-    uc_arch = unicorn.UC_ARCH_X86
-    uc_mode = unicorn.UC_MODE_32
-    regs = {"EAX": UC_X86_REG_EAX, "EBX": UC_X86_REG_EBX, "ECX": UC_X86_REG_ECX,
-            "EDX": UC_X86_REG_EDX, "ESI": UC_X86_REG_ESI, "EDI": UC_X86_REG_EDI,
-            "EBP": UC_X86_REG_EBP, "ESP": UC_X86_REG_ESP,
-    }
-    pc_reg_name = "EIP"
-    pc_reg_value = UC_X86_REG_EIP
+    if unicorn:
+        uc_arch = unicorn.UC_ARCH_X86
+        uc_mode = unicorn.UC_MODE_32
+
+    def __init__(self, *args, **kwargs):
+        import unicorn.x86_const as csts
+        self.regs = {
+            "EAX": csts.UC_X86_REG_EAX, "EBX": csts.UC_X86_REG_EBX,
+            "ECX": csts.UC_X86_REG_ECX, "EDI": csts.UC_X86_REG_EDI,
+            "EDX": csts.UC_X86_REG_EDX, "ESI": csts.UC_X86_REG_ESI,
+            "EBP": csts.UC_X86_REG_EBP, "ESP": csts.UC_X86_REG_ESP,
+        }
+        self.pc_reg_name = "EIP"
+        self.pc_reg_value = csts.UC_X86_REG_EIP
+        super(self.__class__, self).__init__(*args, **kwargs)
 
 
 class UcWrapCPU_x86_64(UcWrapCPU):
 
-    uc_arch = unicorn.UC_ARCH_X86
-    uc_mode = unicorn.UC_MODE_64
-    regs = {"RAX": UC_X86_REG_RAX, "RBX": UC_X86_REG_RBX, "RCX": UC_X86_REG_RCX,
-            "RDX": UC_X86_REG_RDX, "RSI": UC_X86_REG_RSI, "RDI": UC_X86_REG_RDI,
-            "RBP": UC_X86_REG_RBP, "RSP": UC_X86_REG_RSP, "R8": UC_X86_REG_R8,
-            "R9": UC_X86_REG_R9, "R10": UC_X86_REG_R10, "R11": UC_X86_REG_R11,
-            "R12": UC_X86_REG_R12, "R13": UC_X86_REG_R13, "R14": UC_X86_REG_R14,
-            "R15": UC_X86_REG_R15,
-    }
-    pc_reg_name = "RIP"
-    pc_reg_value = UC_X86_REG_RIP
+    if unicorn:
+        uc_arch = unicorn.UC_ARCH_X86
+        uc_mode = unicorn.UC_MODE_64
+
+    def __init__(self, *args, **kwargs):
+        import unicorn.x86_const as csts
+        self.regs = {
+            "RAX": csts.UC_X86_REG_RAX, "RBX": csts.UC_X86_REG_RBX,
+            "RCX": csts.UC_X86_REG_RCX, "RDI": csts.UC_X86_REG_RDI,
+            "RDX": csts.UC_X86_REG_RDX, "RSI": csts.UC_X86_REG_RSI,
+            "RBP": csts.UC_X86_REG_RBP, "RSP": csts.UC_X86_REG_RSP,
+             "R8": csts.UC_X86_REG_R8, "R11": csts.UC_X86_REG_R11,
+            "R9": csts.UC_X86_REG_R9, "R10": csts.UC_X86_REG_R10,
+            "R12": csts.UC_X86_REG_R12, "R13": csts.UC_X86_REG_R13,
+            "R14": csts.UC_X86_REG_R14, "R15": csts.UC_X86_REG_R15,
+        }
+        self.pc_reg_name = "RIP"
+        self.pc_reg_value = csts.UC_X86_REG_RIP
+        super(self.__class__, self).__init__(*args, **kwargs)
 
 
 class UcWrapCPU_arml(UcWrapCPU):
 
-    uc_arch = unicorn.UC_ARCH_ARM
-    uc_mode = unicorn.UC_MODE_ARM + unicorn.UC_MODE_LITTLE_ENDIAN
-    regs = {'CPSR': UC_ARM_REG_CPSR, 'SPSR': UC_ARM_REG_SPSR,
-            'R4': UC_ARM_REG_R4, 'R5': UC_ARM_REG_R5, 'R6': UC_ARM_REG_R6,
-            'R7': UC_ARM_REG_R7, 'R0': UC_ARM_REG_R0, 'R1': UC_ARM_REG_R1,
-            'R2': UC_ARM_REG_R2, 'R3': UC_ARM_REG_R3, 'R8': UC_ARM_REG_R8,
-            'R9': UC_ARM_REG_R9, 'R14': UC_ARM_REG_R14, 'R15': UC_ARM_REG_R15,
-            'R12': UC_ARM_REG_R12, 'R13': UC_ARM_REG_R13, 'R10': UC_ARM_REG_R10,
-            'R11': UC_ARM_REG_R11, 'SP': UC_ARM_REG_SP, 'SL': UC_ARM_REG_SL,
-            'SB': UC_ARM_REG_SB, 'LR': UC_ARM_REG_LR,
-    }
-    pc_reg_name = "PC"
-    pc_reg_value = UC_ARM_REG_PC
+    if unicorn:
+        uc_arch = unicorn.UC_ARCH_ARM
+        uc_mode = unicorn.UC_MODE_ARM + unicorn.UC_MODE_LITTLE_ENDIAN
+
+    def __init__(self, *args, **kwargs):
+        import unicorn.arm_const as csts
+        self.regs = {
+            'CPSR': csts.UC_ARM_REG_CPSR, 'SPSR': csts.UC_ARM_REG_SPSR,
+            'R4': csts.UC_ARM_REG_R4, 'R5': csts.UC_ARM_REG_R5,
+            'R6': csts.UC_ARM_REG_R6, 'R1': csts.UC_ARM_REG_R1,
+            'R7': csts.UC_ARM_REG_R7, 'R0': csts.UC_ARM_REG_R0,
+            'R2': csts.UC_ARM_REG_R2, 'R3': csts.UC_ARM_REG_R3,
+            'R8': csts.UC_ARM_REG_R8, 'R15': csts.UC_ARM_REG_R15,
+            'R9': csts.UC_ARM_REG_R9, 'R14': csts.UC_ARM_REG_R14,
+            'R12': csts.UC_ARM_REG_R12, 'R13': csts.UC_ARM_REG_R13,
+            'R10': csts.UC_ARM_REG_R10, 'SL': csts.UC_ARM_REG_SL,
+            'R11': csts.UC_ARM_REG_R11, 'SP': csts.UC_ARM_REG_SP,
+            'SB': csts.UC_ARM_REG_SB, 'LR': csts.UC_ARM_REG_LR,
+        }
+        self.pc_reg_name = "PC"
+        self.pc_reg_value = csts.UC_ARM_REG_PC
+        super(self.__class__, self).__init__(*args, **kwargs)
 
 
 class UcWrapCPU_armb(UcWrapCPU_arml):
 
-    uc_mode = unicorn.UC_MODE_ARM + unicorn.UC_MODE_BIG_ENDIAN
+    if unicorn:
+        uc_mode = unicorn.UC_MODE_ARM + unicorn.UC_MODE_BIG_ENDIAN
 
 
 class UcWrapCPU_mips32l(UcWrapCPU):
 
-    uc_arch = unicorn.UC_ARCH_MIPS
-    uc_mode = unicorn.UC_MODE_MIPS32 + unicorn.UC_MODE_LITTLE_ENDIAN
-    regs = {'CPR0_0': UC_MIPS_REG_0, 'CPR0_1': UC_MIPS_REG_1,
-            'CPR0_10': UC_MIPS_REG_10, 'CPR0_11': UC_MIPS_REG_11,
-            'CPR0_12': UC_MIPS_REG_12, 'CPR0_13': UC_MIPS_REG_13,
-            'CPR0_14': UC_MIPS_REG_14, 'CPR0_15': UC_MIPS_REG_15,
-            'CPR0_16': UC_MIPS_REG_16, 'CPR0_17': UC_MIPS_REG_17,
-            'CPR0_18': UC_MIPS_REG_18, 'CPR0_19': UC_MIPS_REG_19,
-            'CPR0_2': UC_MIPS_REG_2, 'CPR0_20': UC_MIPS_REG_20,
-            'CPR0_21': UC_MIPS_REG_21, 'CPR0_22': UC_MIPS_REG_22,
-            'CPR0_23': UC_MIPS_REG_23, 'CPR0_24': UC_MIPS_REG_24,
-            'CPR0_25': UC_MIPS_REG_25, 'CPR0_26': UC_MIPS_REG_26,
-            'CPR0_27': UC_MIPS_REG_27, 'CPR0_28': UC_MIPS_REG_28,
-            'CPR0_29': UC_MIPS_REG_29, 'CPR0_3': UC_MIPS_REG_3,
-            'CPR0_30': UC_MIPS_REG_30, 'CPR0_31': UC_MIPS_REG_31,
-            'CPR0_4': UC_MIPS_REG_4, 'CPR0_5': UC_MIPS_REG_5,
-            'CPR0_6': UC_MIPS_REG_6, 'CPR0_7': UC_MIPS_REG_7,
-            'CPR0_8': UC_MIPS_REG_8, 'CPR0_9': UC_MIPS_REG_9,
-            'A0': UC_MIPS_REG_A0, 'A1': UC_MIPS_REG_A1, 'A2': UC_MIPS_REG_A2,
-            'A3': UC_MIPS_REG_A3, 'CC0': UC_MIPS_REG_CC0, 'CC1': UC_MIPS_REG_CC1,
-            'CC2': UC_MIPS_REG_CC2, 'CC3': UC_MIPS_REG_CC3,
-            'CC4': UC_MIPS_REG_CC4, 'CC5': UC_MIPS_REG_CC5,
-            'CC6': UC_MIPS_REG_CC6, 'CC7': UC_MIPS_REG_CC7,
-            'F0': UC_MIPS_REG_F0, 'F1': UC_MIPS_REG_F1, 'F10': UC_MIPS_REG_F10,
-            'F11': UC_MIPS_REG_F11, 'F12': UC_MIPS_REG_F12,
-            'F13': UC_MIPS_REG_F13, 'F14': UC_MIPS_REG_F14,
-            'F15': UC_MIPS_REG_F15, 'F16': UC_MIPS_REG_F16,
-            'F17': UC_MIPS_REG_F17, 'F18': UC_MIPS_REG_F18,
-            'F19': UC_MIPS_REG_F19, 'F2': UC_MIPS_REG_F2,
-            'F20': UC_MIPS_REG_F20, 'F21': UC_MIPS_REG_F21,
-            'F22': UC_MIPS_REG_F22, 'F23': UC_MIPS_REG_F23,
-            'F24': UC_MIPS_REG_F24, 'F25': UC_MIPS_REG_F25,
-            'F26': UC_MIPS_REG_F26, 'F27': UC_MIPS_REG_F27,
-            'F28': UC_MIPS_REG_F28, 'F29': UC_MIPS_REG_F29,
-            'F3': UC_MIPS_REG_F3, 'F30': UC_MIPS_REG_F30,
-            'F31': UC_MIPS_REG_F31, 'F4': UC_MIPS_REG_F4, 'F5': UC_MIPS_REG_F5,
-            'F6': UC_MIPS_REG_F6, 'F7': UC_MIPS_REG_F7, 'F8': UC_MIPS_REG_F8,
-            'F9': UC_MIPS_REG_F9, 'FCC0': UC_MIPS_REG_FCC0,
-            'FCC1': UC_MIPS_REG_FCC1, 'FCC2': UC_MIPS_REG_FCC2,
-            'FCC3': UC_MIPS_REG_FCC3, 'FCC4': UC_MIPS_REG_FCC4,
-            'FCC5': UC_MIPS_REG_FCC5, 'FCC6': UC_MIPS_REG_FCC6,
-            'FCC7': UC_MIPS_REG_FCC7, 'FP': UC_MIPS_REG_FP,
-            'GP': UC_MIPS_REG_GP, 'R_HI': UC_MIPS_REG_HI, 'K0': UC_MIPS_REG_K0,
-            'K1': UC_MIPS_REG_K1, 'R_LO': UC_MIPS_REG_LO, 'RA': UC_MIPS_REG_RA,
-            'S0': UC_MIPS_REG_S0, 'S1': UC_MIPS_REG_S1, 'S2': UC_MIPS_REG_S2,
-            'S3': UC_MIPS_REG_S3, 'S4': UC_MIPS_REG_S4, 'S5': UC_MIPS_REG_S5,
-            'S6': UC_MIPS_REG_S6, 'S7': UC_MIPS_REG_S7, 'S8': UC_MIPS_REG_S8,
-            'SP': UC_MIPS_REG_SP, 'T0': UC_MIPS_REG_T0, 'T1': UC_MIPS_REG_T1,
-            'T2': UC_MIPS_REG_T2, 'T3': UC_MIPS_REG_T3, 'T4': UC_MIPS_REG_T4,
-            'T5': UC_MIPS_REG_T5, 'T6': UC_MIPS_REG_T6, 'T7': UC_MIPS_REG_T7,
-            'T8': UC_MIPS_REG_T8, 'T9': UC_MIPS_REG_T9, 'V0': UC_MIPS_REG_V0,
-            'V1': UC_MIPS_REG_V1, 'W0': UC_MIPS_REG_W0, 'W1': UC_MIPS_REG_W1,
-            'W10': UC_MIPS_REG_W10, 'W11': UC_MIPS_REG_W11,
-            'W12': UC_MIPS_REG_W12, 'W13': UC_MIPS_REG_W13,
-            'W14': UC_MIPS_REG_W14, 'W15': UC_MIPS_REG_W15,
-            'W16': UC_MIPS_REG_W16, 'W17': UC_MIPS_REG_W17,
-            'W18': UC_MIPS_REG_W18, 'W19': UC_MIPS_REG_W19,
-            'W2': UC_MIPS_REG_W2, 'W20': UC_MIPS_REG_W20,
-            'W21': UC_MIPS_REG_W21, 'W22': UC_MIPS_REG_W22,
-            'W23': UC_MIPS_REG_W23, 'W24': UC_MIPS_REG_W24,
-            'W25': UC_MIPS_REG_W25, 'W26': UC_MIPS_REG_W26,
-            'W27': UC_MIPS_REG_W27, 'W28': UC_MIPS_REG_W28,
-            'W29': UC_MIPS_REG_W29, 'W3': UC_MIPS_REG_W3,
-            'W30': UC_MIPS_REG_W30, 'W31': UC_MIPS_REG_W31,
-            'W4': UC_MIPS_REG_W4, 'W5': UC_MIPS_REG_W5, 'W6': UC_MIPS_REG_W6,
-            'W7': UC_MIPS_REG_W7, 'W8': UC_MIPS_REG_W8, 'W9': UC_MIPS_REG_W9,
-    }
-    pc_reg_name = "PC"
-    pc_reg_value = UC_MIPS_REG_PC
+    if unicorn:
+        uc_arch = unicorn.UC_ARCH_MIPS
+        uc_mode = unicorn.UC_MODE_MIPS32 + unicorn.UC_MODE_LITTLE_ENDIAN
+
+    def __init__(self, *args, **kwargs):
+        import unicorn.mips_const as csts
+        self.regs = {
+            'CPR0_0': csts.UC_MIPS_REG_0, 'CPR0_1': csts.UC_MIPS_REG_1,
+            'CPR0_10': csts.UC_MIPS_REG_10, 'CPR0_11': csts.UC_MIPS_REG_11,
+            'CPR0_12': csts.UC_MIPS_REG_12, 'CPR0_13': csts.UC_MIPS_REG_13,
+            'CPR0_14': csts.UC_MIPS_REG_14, 'CPR0_15': csts.UC_MIPS_REG_15,
+            'CPR0_16': csts.UC_MIPS_REG_16, 'CPR0_17': csts.UC_MIPS_REG_17,
+            'CPR0_18': csts.UC_MIPS_REG_18, 'CPR0_19': csts.UC_MIPS_REG_19,
+            'CPR0_2': csts.UC_MIPS_REG_2, 'CPR0_20': csts.UC_MIPS_REG_20,
+            'CPR0_21': csts.UC_MIPS_REG_21, 'CPR0_22': csts.UC_MIPS_REG_22,
+            'CPR0_23': csts.UC_MIPS_REG_23, 'CPR0_24': csts.UC_MIPS_REG_24,
+            'CPR0_25': csts.UC_MIPS_REG_25, 'CPR0_26': csts.UC_MIPS_REG_26,
+            'CPR0_27': csts.UC_MIPS_REG_27, 'CPR0_28': csts.UC_MIPS_REG_28,
+            'CPR0_29': csts.UC_MIPS_REG_29, 'CPR0_3': csts.UC_MIPS_REG_3,
+            'CPR0_30': csts.UC_MIPS_REG_30, 'CPR0_31': csts.UC_MIPS_REG_31,
+            'CPR0_4': csts.UC_MIPS_REG_4, 'CPR0_5': csts.UC_MIPS_REG_5,
+            'CPR0_6': csts.UC_MIPS_REG_6, 'CPR0_7': csts.UC_MIPS_REG_7,
+            'CPR0_8': csts.UC_MIPS_REG_8, 'CPR0_9': csts.UC_MIPS_REG_9,
+            'A0': csts.UC_MIPS_REG_A0, 'A1': csts.UC_MIPS_REG_A1,
+            'A2': csts.UC_MIPS_REG_A2, 'CC1': csts.UC_MIPS_REG_CC1,
+            'A3': csts.UC_MIPS_REG_A3, 'CC0': csts.UC_MIPS_REG_CC0,
+            'CC2': csts.UC_MIPS_REG_CC2, 'CC3': csts.UC_MIPS_REG_CC3,
+            'CC4': csts.UC_MIPS_REG_CC4, 'CC5': csts.UC_MIPS_REG_CC5,
+            'CC6': csts.UC_MIPS_REG_CC6, 'CC7': csts.UC_MIPS_REG_CC7,
+            'F0': csts.UC_MIPS_REG_F0, 'F1': csts.UC_MIPS_REG_F1,
+            'F10': csts.UC_MIPS_REG_F10, 'F5': csts.UC_MIPS_REG_F5,
+            'F11': csts.UC_MIPS_REG_F11, 'F12': csts.UC_MIPS_REG_F12,
+            'F13': csts.UC_MIPS_REG_F13, 'F14': csts.UC_MIPS_REG_F14,
+            'F15': csts.UC_MIPS_REG_F15, 'F16': csts.UC_MIPS_REG_F16,
+            'F17': csts.UC_MIPS_REG_F17, 'F18': csts.UC_MIPS_REG_F18,
+            'F19': csts.UC_MIPS_REG_F19, 'F2': csts.UC_MIPS_REG_F2,
+            'F20': csts.UC_MIPS_REG_F20, 'F21': csts.UC_MIPS_REG_F21,
+            'F22': csts.UC_MIPS_REG_F22, 'F23': csts.UC_MIPS_REG_F23,
+            'F24': csts.UC_MIPS_REG_F24, 'F25': csts.UC_MIPS_REG_F25,
+            'F26': csts.UC_MIPS_REG_F26, 'F27': csts.UC_MIPS_REG_F27,
+            'F28': csts.UC_MIPS_REG_F28, 'F29': csts.UC_MIPS_REG_F29,
+            'F3': csts.UC_MIPS_REG_F3, 'F30': csts.UC_MIPS_REG_F30,
+            'F31': csts.UC_MIPS_REG_F31, 'F4': csts.UC_MIPS_REG_F4,
+            'F6': csts.UC_MIPS_REG_F6, 'F7': csts.UC_MIPS_REG_F7,
+            'F8': csts.UC_MIPS_REG_F8,
+            'F9': csts.UC_MIPS_REG_F9, 'FCC0': csts.UC_MIPS_REG_FCC0,
+            'FCC1': csts.UC_MIPS_REG_FCC1, 'FCC2': csts.UC_MIPS_REG_FCC2,
+            'FCC3': csts.UC_MIPS_REG_FCC3, 'FCC4': csts.UC_MIPS_REG_FCC4,
+            'FCC5': csts.UC_MIPS_REG_FCC5, 'FCC6': csts.UC_MIPS_REG_FCC6,
+            'FCC7': csts.UC_MIPS_REG_FCC7, 'FP': csts.UC_MIPS_REG_FP,
+            'GP': csts.UC_MIPS_REG_GP, 'R_HI': csts.UC_MIPS_REG_HI,
+            'K0': csts.UC_MIPS_REG_K0, 'RA': csts.UC_MIPS_REG_RA,
+            'K1': csts.UC_MIPS_REG_K1, 'R_LO': csts.UC_MIPS_REG_LO,
+            'S0': csts.UC_MIPS_REG_S0, 'S1': csts.UC_MIPS_REG_S1,
+            'S2': csts.UC_MIPS_REG_S2, 'S3': csts.UC_MIPS_REG_S3,
+            'S4': csts.UC_MIPS_REG_S4, 'S5': csts.UC_MIPS_REG_S5,
+            'S6': csts.UC_MIPS_REG_S6, 'S7': csts.UC_MIPS_REG_S7,
+            'S8': csts.UC_MIPS_REG_S8, 'SP': csts.UC_MIPS_REG_SP,
+            'T0': csts.UC_MIPS_REG_T0, 'T1': csts.UC_MIPS_REG_T1,
+            'T2': csts.UC_MIPS_REG_T2, 'T3': csts.UC_MIPS_REG_T3,
+            'T4': csts.UC_MIPS_REG_T4, 'T5': csts.UC_MIPS_REG_T5,
+            'T6': csts.UC_MIPS_REG_T6, 'T7': csts.UC_MIPS_REG_T7,
+            'T8': csts.UC_MIPS_REG_T8, 'T9': csts.UC_MIPS_REG_T9,
+            'V0': csts.UC_MIPS_REG_V0, 'V1': csts.UC_MIPS_REG_V1,
+            'W0': csts.UC_MIPS_REG_W0, 'W1': csts.UC_MIPS_REG_W1,
+            'W10': csts.UC_MIPS_REG_W10, 'W11': csts.UC_MIPS_REG_W11,
+            'W12': csts.UC_MIPS_REG_W12, 'W13': csts.UC_MIPS_REG_W13,
+            'W14': csts.UC_MIPS_REG_W14, 'W15': csts.UC_MIPS_REG_W15,
+            'W16': csts.UC_MIPS_REG_W16, 'W17': csts.UC_MIPS_REG_W17,
+            'W18': csts.UC_MIPS_REG_W18, 'W19': csts.UC_MIPS_REG_W19,
+            'W2': csts.UC_MIPS_REG_W2, 'W20': csts.UC_MIPS_REG_W20,
+            'W21': csts.UC_MIPS_REG_W21, 'W22': csts.UC_MIPS_REG_W22,
+            'W23': csts.UC_MIPS_REG_W23, 'W24': csts.UC_MIPS_REG_W24,
+            'W25': csts.UC_MIPS_REG_W25, 'W26': csts.UC_MIPS_REG_W26,
+            'W27': csts.UC_MIPS_REG_W27, 'W28': csts.UC_MIPS_REG_W28,
+            'W29': csts.UC_MIPS_REG_W29, 'W3': csts.UC_MIPS_REG_W3,
+            'W30': csts.UC_MIPS_REG_W30, 'W31': csts.UC_MIPS_REG_W31,
+            'W4': csts.UC_MIPS_REG_W4, 'W5': csts.UC_MIPS_REG_W5,
+            'W6': csts.UC_MIPS_REG_W6, 'W7': csts.UC_MIPS_REG_W7,
+            'W8': csts.UC_MIPS_REG_W8, 'W9': csts.UC_MIPS_REG_W9,
+        }
+        self.pc_reg_name = "PC"
+        self.pc_reg_value = csts.UC_MIPS_REG_PC
 
 
 class UcWrapCPU_mips32b(UcWrapCPU):
 
-    uc_mode = unicorn.UC_MODE_MIPS32 + unicorn.UC_MODE_BIG_ENDIAN
+    if unicorn:
+        uc_mode = unicorn.UC_MODE_MIPS32 + unicorn.UC_MODE_BIG_ENDIAN
 
 
 UcWrapCPU_x86_32.register("x86", 32)
