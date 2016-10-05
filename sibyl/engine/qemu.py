@@ -3,6 +3,7 @@ from miasm2.jitter.csts import PAGE_READ, PAGE_WRITE
 try:
     import unicorn
     from unicorn.x86_const import *
+    from unicorn.arm_const import *
 except ImportError:
     unicorn = None
 
@@ -231,8 +232,28 @@ class UcWrapCPU_x86_32(UcWrapCPU):
     uc_mode = unicorn.UC_MODE_32
     regs = {"EAX": UC_X86_REG_EAX, "EBX": UC_X86_REG_EBX, "ECX": UC_X86_REG_ECX,
             "EDX": UC_X86_REG_EDX, "ESI": UC_X86_REG_ESI, "EDI": UC_X86_REG_EDI,
-            "EBP": UC_X86_REG_EBP, "ESP": UC_X86_REG_ESP}
+            "EBP": UC_X86_REG_EBP, "ESP": UC_X86_REG_ESP,
+    }
     pc_reg_name = "EIP"
     pc_reg_value = UC_X86_REG_EIP
 
+
+class UcWrapCPU_arm(UcWrapCPU):
+
+    uc_arch = unicorn.UC_ARCH_ARM
+    uc_mode = unicorn.UC_MODE_ARM
+    regs = {'CPSR': UC_ARM_REG_CPSR, 'SPSR': UC_ARM_REG_SPSR,
+            'R4': UC_ARM_REG_R4, 'R5': UC_ARM_REG_R5, 'R6': UC_ARM_REG_R6,
+            'R7': UC_ARM_REG_R7, 'R0': UC_ARM_REG_R0, 'R1': UC_ARM_REG_R1,
+            'R2': UC_ARM_REG_R2, 'R3': UC_ARM_REG_R3, 'R8': UC_ARM_REG_R8,
+            'R9': UC_ARM_REG_R9, 'R14': UC_ARM_REG_R14, 'R15': UC_ARM_REG_R15,
+            'R12': UC_ARM_REG_R12, 'R13': UC_ARM_REG_R13, 'R10': UC_ARM_REG_R10,
+            'R11': UC_ARM_REG_R11, 'SP': UC_ARM_REG_SP, 'SL': UC_ARM_REG_SL,
+            'SB': UC_ARM_REG_SB, 'LR': UC_ARM_REG_LR,
+    }
+    pc_reg_name = "PC"
+    pc_reg_value = UC_ARM_REG_PC
+
+
 UcWrapCPU_x86_32.register("x86", 32)
+UcWrapCPU_arm.register("arm", "l")
