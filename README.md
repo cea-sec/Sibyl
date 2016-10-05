@@ -244,10 +244,19 @@ class TestA64l(test.Test):
 
 A more elaborated test can be found in _sibyl/test/ctype.py_.
 
+### Emulation engine
+
+A few emulation engine are supported. Through the `--jitter` option, one can
+specified:
+
+* `python`: use a full Python emulation
+* `tcc` or `gcc`: use a C compiler to JiT code (thanks to Miasm)
+* `qemu`: use the Unicorn (http://www.unicorn-engine.org/) QEMU binding
 
 Installation
 ------------
 _Sibyl_ requires the last version of _Miasm2_ and the corresponding version of _Elfesteem_.
+For the `qemu` engine, the `unicorn` python package must be installed (refer to the documentation of Unicorn for more detail).
 _Sibyl_ comes as a package, without _setup.py_ utility for now.
 One just needs to add the _Sibyl_ root directory to its _PYTHONPATH_ environment variable.
 
