@@ -238,10 +238,10 @@ class UcWrapCPU_x86_32(UcWrapCPU):
     pc_reg_value = UC_X86_REG_EIP
 
 
-class UcWrapCPU_arm(UcWrapCPU):
+class UcWrapCPU_arml(UcWrapCPU):
 
     uc_arch = unicorn.UC_ARCH_ARM
-    uc_mode = unicorn.UC_MODE_ARM
+    uc_mode = unicorn.UC_MODE_ARM + unicorn.UC_MODE_LITTLE_ENDIAN
     regs = {'CPSR': UC_ARM_REG_CPSR, 'SPSR': UC_ARM_REG_SPSR,
             'R4': UC_ARM_REG_R4, 'R5': UC_ARM_REG_R5, 'R6': UC_ARM_REG_R6,
             'R7': UC_ARM_REG_R7, 'R0': UC_ARM_REG_R0, 'R1': UC_ARM_REG_R1,
@@ -255,5 +255,11 @@ class UcWrapCPU_arm(UcWrapCPU):
     pc_reg_value = UC_ARM_REG_PC
 
 
+class UcWrapCPU_armb(UcWrapCPU_arml):
+
+    uc_mode = unicorn.UC_MODE_ARM + unicorn.UC_MODE_BIG_ENDIAN
+
+
 UcWrapCPU_x86_32.register("x86", 32)
-UcWrapCPU_arm.register("arm", "l")
+UcWrapCPU_arml.register("arm", "l")
+UcWrapCPU_armb.register("arm", "b")
