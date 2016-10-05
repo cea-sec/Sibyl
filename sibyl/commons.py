@@ -17,3 +17,5 @@ class TimeoutException(Exception):
     """Exception to be called on timeouts"""
     pass
 
+
+END_ADDR = 0x1337beef

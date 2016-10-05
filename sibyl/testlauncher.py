@@ -22,7 +22,7 @@ import signal
 import logging
 from miasm2.analysis.binary import Container
 
-from sibyl.commons import init_logger, TimeoutException
+from sibyl.commons import init_logger, TimeoutException, END_ADDR
 from sibyl.engine import QEMUEngine, MiasmEngine
 
 class TestLauncher(object):
@@ -87,7 +87,7 @@ class TestLauncher(object):
 
             # Prepare VM
             init(test)
-            self.abi.prepare_call(ret_addr=0x1337beef)
+            self.abi.prepare_call(ret_addr=END_ADDR)
 
             # Run code
             status = self.engine.run(address, timeout_seconds)

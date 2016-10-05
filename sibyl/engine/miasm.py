@@ -1,7 +1,7 @@
 import signal
 
 from sibyl.engine.engine import Engine
-from sibyl.commons import TimeoutException
+from sibyl.commons import TimeoutException, END_ADDR
 
 
 class MiasmEngine(Engine):
@@ -9,7 +9,7 @@ class MiasmEngine(Engine):
 
     def __init__(self, machine, jit_engine):
         jitter = machine.jitter(jit_engine)
-        jitter.set_breakpoint(0x1337beef, MiasmEngine._code_sentinelle)
+        jitter.set_breakpoint(END_ADDR, MiasmEngine._code_sentinelle)
         self.jitter = jitter
 
         # Signal handling

@@ -7,6 +7,8 @@ except ImportError:
     unicorn = None
 
 from sibyl.engine.engine import Engine
+from sibyl.commons import END_ADDR
+
 
 class UnexpectedStopException(Exception):
     """Exception to be called on timeouts"""
@@ -68,11 +70,11 @@ class UcWrapJitter(object):
 
     def run(self, pc, timeout_seconds=1):
         try:
-            self.mu.emu_start(pc, 0x1337beef,
+            self.mu.emu_start(pc, END_ADDR,
                               timeout_seconds * unicorn.UC_SECOND_SCALE)
         except Exception as e:
             self.mu.emu_stop()
-            if self.cpu.EIP != 0x1337beef:
+            if self.cpu.EIP != END_ADDR:
                 raise UnexpectedStopException()
 
     def verbose_mode(self):
