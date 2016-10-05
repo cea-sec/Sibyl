@@ -4,6 +4,7 @@ try:
     import unicorn
     from unicorn.x86_const import *
     from unicorn.arm_const import *
+    from unicorn.mips_const import *
 except ImportError:
     unicorn = None
 
@@ -260,6 +261,86 @@ class UcWrapCPU_armb(UcWrapCPU_arml):
     uc_mode = unicorn.UC_MODE_ARM + unicorn.UC_MODE_BIG_ENDIAN
 
 
+class UcWrapCPU_mips32l(UcWrapCPU):
+
+    uc_arch = unicorn.UC_ARCH_MIPS
+    uc_mode = unicorn.UC_MODE_MIPS32 + unicorn.UC_MODE_LITTLE_ENDIAN
+    regs = {'CPR0_0': UC_MIPS_REG_0, 'CPR0_1': UC_MIPS_REG_1,
+            'CPR0_10': UC_MIPS_REG_10, 'CPR0_11': UC_MIPS_REG_11,
+            'CPR0_12': UC_MIPS_REG_12, 'CPR0_13': UC_MIPS_REG_13,
+            'CPR0_14': UC_MIPS_REG_14, 'CPR0_15': UC_MIPS_REG_15,
+            'CPR0_16': UC_MIPS_REG_16, 'CPR0_17': UC_MIPS_REG_17,
+            'CPR0_18': UC_MIPS_REG_18, 'CPR0_19': UC_MIPS_REG_19,
+            'CPR0_2': UC_MIPS_REG_2, 'CPR0_20': UC_MIPS_REG_20,
+            'CPR0_21': UC_MIPS_REG_21, 'CPR0_22': UC_MIPS_REG_22,
+            'CPR0_23': UC_MIPS_REG_23, 'CPR0_24': UC_MIPS_REG_24,
+            'CPR0_25': UC_MIPS_REG_25, 'CPR0_26': UC_MIPS_REG_26,
+            'CPR0_27': UC_MIPS_REG_27, 'CPR0_28': UC_MIPS_REG_28,
+            'CPR0_29': UC_MIPS_REG_29, 'CPR0_3': UC_MIPS_REG_3,
+            'CPR0_30': UC_MIPS_REG_30, 'CPR0_31': UC_MIPS_REG_31,
+            'CPR0_4': UC_MIPS_REG_4, 'CPR0_5': UC_MIPS_REG_5,
+            'CPR0_6': UC_MIPS_REG_6, 'CPR0_7': UC_MIPS_REG_7,
+            'CPR0_8': UC_MIPS_REG_8, 'CPR0_9': UC_MIPS_REG_9,
+            'A0': UC_MIPS_REG_A0, 'A1': UC_MIPS_REG_A1, 'A2': UC_MIPS_REG_A2,
+            'A3': UC_MIPS_REG_A3, 'CC0': UC_MIPS_REG_CC0, 'CC1': UC_MIPS_REG_CC1,
+            'CC2': UC_MIPS_REG_CC2, 'CC3': UC_MIPS_REG_CC3,
+            'CC4': UC_MIPS_REG_CC4, 'CC5': UC_MIPS_REG_CC5,
+            'CC6': UC_MIPS_REG_CC6, 'CC7': UC_MIPS_REG_CC7,
+            'F0': UC_MIPS_REG_F0, 'F1': UC_MIPS_REG_F1, 'F10': UC_MIPS_REG_F10,
+            'F11': UC_MIPS_REG_F11, 'F12': UC_MIPS_REG_F12,
+            'F13': UC_MIPS_REG_F13, 'F14': UC_MIPS_REG_F14,
+            'F15': UC_MIPS_REG_F15, 'F16': UC_MIPS_REG_F16,
+            'F17': UC_MIPS_REG_F17, 'F18': UC_MIPS_REG_F18,
+            'F19': UC_MIPS_REG_F19, 'F2': UC_MIPS_REG_F2,
+            'F20': UC_MIPS_REG_F20, 'F21': UC_MIPS_REG_F21,
+            'F22': UC_MIPS_REG_F22, 'F23': UC_MIPS_REG_F23,
+            'F24': UC_MIPS_REG_F24, 'F25': UC_MIPS_REG_F25,
+            'F26': UC_MIPS_REG_F26, 'F27': UC_MIPS_REG_F27,
+            'F28': UC_MIPS_REG_F28, 'F29': UC_MIPS_REG_F29,
+            'F3': UC_MIPS_REG_F3, 'F30': UC_MIPS_REG_F30,
+            'F31': UC_MIPS_REG_F31, 'F4': UC_MIPS_REG_F4, 'F5': UC_MIPS_REG_F5,
+            'F6': UC_MIPS_REG_F6, 'F7': UC_MIPS_REG_F7, 'F8': UC_MIPS_REG_F8,
+            'F9': UC_MIPS_REG_F9, 'FCC0': UC_MIPS_REG_FCC0,
+            'FCC1': UC_MIPS_REG_FCC1, 'FCC2': UC_MIPS_REG_FCC2,
+            'FCC3': UC_MIPS_REG_FCC3, 'FCC4': UC_MIPS_REG_FCC4,
+            'FCC5': UC_MIPS_REG_FCC5, 'FCC6': UC_MIPS_REG_FCC6,
+            'FCC7': UC_MIPS_REG_FCC7, 'FP': UC_MIPS_REG_FP,
+            'GP': UC_MIPS_REG_GP, 'R_HI': UC_MIPS_REG_HI, 'K0': UC_MIPS_REG_K0,
+            'K1': UC_MIPS_REG_K1, 'R_LO': UC_MIPS_REG_LO, 'RA': UC_MIPS_REG_RA,
+            'S0': UC_MIPS_REG_S0, 'S1': UC_MIPS_REG_S1, 'S2': UC_MIPS_REG_S2,
+            'S3': UC_MIPS_REG_S3, 'S4': UC_MIPS_REG_S4, 'S5': UC_MIPS_REG_S5,
+            'S6': UC_MIPS_REG_S6, 'S7': UC_MIPS_REG_S7, 'S8': UC_MIPS_REG_S8,
+            'SP': UC_MIPS_REG_SP, 'T0': UC_MIPS_REG_T0, 'T1': UC_MIPS_REG_T1,
+            'T2': UC_MIPS_REG_T2, 'T3': UC_MIPS_REG_T3, 'T4': UC_MIPS_REG_T4,
+            'T5': UC_MIPS_REG_T5, 'T6': UC_MIPS_REG_T6, 'T7': UC_MIPS_REG_T7,
+            'T8': UC_MIPS_REG_T8, 'T9': UC_MIPS_REG_T9, 'V0': UC_MIPS_REG_V0,
+            'V1': UC_MIPS_REG_V1, 'W0': UC_MIPS_REG_W0, 'W1': UC_MIPS_REG_W1,
+            'W10': UC_MIPS_REG_W10, 'W11': UC_MIPS_REG_W11,
+            'W12': UC_MIPS_REG_W12, 'W13': UC_MIPS_REG_W13,
+            'W14': UC_MIPS_REG_W14, 'W15': UC_MIPS_REG_W15,
+            'W16': UC_MIPS_REG_W16, 'W17': UC_MIPS_REG_W17,
+            'W18': UC_MIPS_REG_W18, 'W19': UC_MIPS_REG_W19,
+            'W2': UC_MIPS_REG_W2, 'W20': UC_MIPS_REG_W20,
+            'W21': UC_MIPS_REG_W21, 'W22': UC_MIPS_REG_W22,
+            'W23': UC_MIPS_REG_W23, 'W24': UC_MIPS_REG_W24,
+            'W25': UC_MIPS_REG_W25, 'W26': UC_MIPS_REG_W26,
+            'W27': UC_MIPS_REG_W27, 'W28': UC_MIPS_REG_W28,
+            'W29': UC_MIPS_REG_W29, 'W3': UC_MIPS_REG_W3,
+            'W30': UC_MIPS_REG_W30, 'W31': UC_MIPS_REG_W31,
+            'W4': UC_MIPS_REG_W4, 'W5': UC_MIPS_REG_W5, 'W6': UC_MIPS_REG_W6,
+            'W7': UC_MIPS_REG_W7, 'W8': UC_MIPS_REG_W8, 'W9': UC_MIPS_REG_W9,
+    }
+    pc_reg_name = "PC"
+    pc_reg_value = UC_MIPS_REG_PC
+
+
+class UcWrapCPU_mips32b(UcWrapCPU):
+
+    uc_mode = unicorn.UC_MODE_MIPS32 + unicorn.UC_MODE_BIG_ENDIAN
+
+
 UcWrapCPU_x86_32.register("x86", 32)
 UcWrapCPU_arml.register("arm", "l")
 UcWrapCPU_armb.register("arm", "b")
+UcWrapCPU_mips32l.register("mips32", "l")
+UcWrapCPU_mips32b.register("mips32", "b")
