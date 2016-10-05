@@ -7,7 +7,7 @@ except ImportError:
     unicorn = None
 
 from sibyl.engine.engine import Engine
-from sibyl.commons import END_ADDR
+from sibyl.commons import END_ADDR, init_logger
 
 
 class UnexpectedStopException(Exception):
@@ -21,7 +21,7 @@ class QEMUEngine(Engine):
         if unicorn is None:
             raise ImportError("QEMU engine unavailable: 'unicorn' import error")
 
-        self.jitter = UcWrapJitter()
+        self.jitter = UcWrapJitter(machine)
         super(QEMUEngine, self).__init__(machine)
 
 
@@ -52,21 +52,31 @@ class QEMUEngine(Engine):
 
 class UcWrapJitter(object):
 
-    def __init__(self):
+    def __init__(self, machine):
+        self.ira = machine.ira()
         self.renew()
 
     def renew(self):
-        self.mu = unicorn.Uc(unicorn.UC_ARCH_X86, unicorn.UC_MODE_32)
+        ask_arch, ask_attrib = self.ira.arch.name, self.ira.attrib
+        cpucls = UcWrapCPU.available_cpus.get((ask_arch, ask_attrib), None)
+        if not cpucls:
+            raise ValueError("Unimplemented architecture (%s, %s)" % (ask_arch,
+                                                                      ask_attrib))
+        arch, mode = cpucls.uc_arch, cpucls.uc_mode
+
+        self.mu = unicorn.Uc(arch, mode)
         self.vm = UcWrapVM(self.mu)
-        self.cpu = UcWrapCPU(self.mu)
+        self.cpu = cpucls(self.mu)
 
     def init_stack(self):
-        self.vm.add_memory_page(0x1230000, PAGE_WRITE | PAGE_READ, "\x00" * 0x10000, "Stack")
-        self.cpu.ESP = 0x1230000 + 0x10000
+        self.vm.add_memory_page(0x1230000, PAGE_WRITE | PAGE_READ,
+                                "\x00" * 0x10000, "Stack")
+        setattr(self.cpu, self.ira.sp.name, 0x1230000 + 0x10000)
 
     def push_uint32_t(self, value):
-        self.cpu.ESP -= 32 / 8
-        self.vm.set_mem(self.cpu.ESP, pck32(value))
+        setattr(self.cpu, self.ira.sp.name,
+                getattr(self.cpu, self.ira.sp.name) - self.ira.sp.size / 8)
+        self.vm.set_mem(getattr(self.cpu, self.ira.sp.name), pck32(value))
 
     def run(self, pc, timeout_seconds=1):
         try:
@@ -74,7 +84,7 @@ class UcWrapJitter(object):
                               timeout_seconds * unicorn.UC_SECOND_SCALE)
         except Exception as e:
             self.mu.emu_stop()
-            if self.cpu.EIP != END_ADDR:
+            if getattr(self.cpu, self.ira.pc.name) != END_ADDR:
                 raise UnexpectedStopException()
 
     def verbose_mode(self):
@@ -163,43 +173,65 @@ class UcWrapVM(object):
 
 class UcWrapCPU(object):
 
-    regs = [UC_X86_REG_EAX, UC_X86_REG_EBX, UC_X86_REG_ECX, UC_X86_REG_EDX,
-            UC_X86_REG_ESI, UC_X86_REG_EDI, UC_X86_REG_EBP, UC_X86_REG_ESP]
+    # name -> Uc value
+    regs = None
+    # PC registers, name and Uc value
+    pc_reg_name = None
+    pc_reg_value = None
+
+    # (arch, attrib) -> CPU class
+    available_cpus = {}
+    # Uc architecture and mode
+    uc_arch = None
+    uc_mode = None
+
     def __init__(self, mu):
         self.mu = mu
+        self.logger = init_logger("UcWrapCPU")
 
     def init_regs(self):
-        for reg in self.regs:
+        for reg in self.regs.itervalues():
             self.mu.reg_write(reg, 0)
 
     def __setattr__(self, name, value):
-        if name in ["mu"]:
+        if name in ["mu", "logger"]:
             super(UcWrapCPU, self).__setattr__(name, value)
-        elif name == "ESP":
-            self.mu.reg_write(UC_X86_REG_ESP, value)
-        elif name == "EIP":
-            self.mu.reg_write(UC_X86_REG_EIP, value)
+        elif name in self.regs:
+            self.mu.reg_write(self.regs[name], value)
+        elif name == self.pc_reg_name:
+            self.mu.reg_write(self.pc_reg_value, value)
         else:
-            fds
+            self.logger.warning("Unknown attribute %s set to %s", name, value)
+            raise AttributeError()
 
     def __getattr__(self, name):
-        if name == "ESP":
-            return self.mu.reg_read(UC_X86_REG_ESP)
-        if name == "EIP":
-            return self.mu.reg_read(UC_X86_REG_EIP)
-        if name == "EAX":
-            return self.mu.reg_read(UC_X86_REG_EAX)
+        if name in self.regs:
+            return self.mu.reg_read(self.regs[name])
+        elif name == self.pc_reg_name:
+            return self.mu.reg_read(self.pc_reg_value)
         else:
-            print name
-            super(UcWrapCPU, self).__getattr__(name)
+            raise AttributeError
 
     def get_gpreg(self):
-        return {i: self.mu.reg_read(v) for i, v in enumerate(self.regs)}
+        return {k: self.mu.reg_read(v) for k, v in self.regs.iteritems()}
 
     def set_gpreg(self, values):
-        for i, v in enumerate(self.regs):
-            self.mu.reg_write(v, values[i])
+        for k, v in values.iteritems():
+            self.mu.reg_write(self.regs[k], v)
 
-    def set_exception(self, value):
-        pass
+    @classmethod
+    def register(cls, arch, attrib):
+        super(cls, cls).available_cpus[(arch, attrib)] = cls
 
+
+class UcWrapCPU_x86_32(UcWrapCPU):
+
+    uc_arch = unicorn.UC_ARCH_X86
+    uc_mode = unicorn.UC_MODE_32
+    regs = {"EAX": UC_X86_REG_EAX, "EBX": UC_X86_REG_EBX, "ECX": UC_X86_REG_ECX,
+            "EDX": UC_X86_REG_EDX, "ESI": UC_X86_REG_ESI, "EDI": UC_X86_REG_EDI,
+            "EBP": UC_X86_REG_EBP, "ESP": UC_X86_REG_ESP}
+    pc_reg_name = "EIP"
+    pc_reg_value = UC_X86_REG_EIP
+
+UcWrapCPU_x86_32.register("x86", 32)
