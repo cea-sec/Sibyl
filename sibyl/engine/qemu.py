@@ -1,4 +1,4 @@
-from miasm2.core.utils import pck32
+from miasm2.core.utils import pck32, pck64
 from miasm2.jitter.csts import PAGE_READ, PAGE_WRITE
 try:
     import unicorn
@@ -79,6 +79,11 @@ class UcWrapJitter(object):
         setattr(self.cpu, self.ira.sp.name,
                 getattr(self.cpu, self.ira.sp.name) - self.ira.sp.size / 8)
         self.vm.set_mem(getattr(self.cpu, self.ira.sp.name), pck32(value))
+
+    def push_uint64_t(self, value):
+        setattr(self.cpu, self.ira.sp.name,
+                getattr(self.cpu, self.ira.sp.name) - self.ira.sp.size / 8)
+        self.vm.set_mem(getattr(self.cpu, self.ira.sp.name), pck64(value))
 
     def run(self, pc, timeout_seconds=1):
         try:
@@ -204,8 +209,7 @@ class UcWrapCPU(object):
         elif name == self.pc_reg_name:
             self.mu.reg_write(self.pc_reg_value, value)
         else:
-            self.logger.warning("Unknown attribute %s set to %s", name, value)
-            raise AttributeError()
+            raise AttributeError("Unknown attribute %s set to %s", name, value)
 
     def __getattr__(self, name):
         if name in self.regs:
@@ -237,6 +241,21 @@ class UcWrapCPU_x86_32(UcWrapCPU):
     }
     pc_reg_name = "EIP"
     pc_reg_value = UC_X86_REG_EIP
+
+
+class UcWrapCPU_x86_64(UcWrapCPU):
+
+    uc_arch = unicorn.UC_ARCH_X86
+    uc_mode = unicorn.UC_MODE_64
+    regs = {"RAX": UC_X86_REG_RAX, "RBX": UC_X86_REG_RBX, "RCX": UC_X86_REG_RCX,
+            "RDX": UC_X86_REG_RDX, "RSI": UC_X86_REG_RSI, "RDI": UC_X86_REG_RDI,
+            "RBP": UC_X86_REG_RBP, "RSP": UC_X86_REG_RSP, "R8": UC_X86_REG_R8,
+            "R9": UC_X86_REG_R9, "R10": UC_X86_REG_R10, "R11": UC_X86_REG_R11,
+            "R12": UC_X86_REG_R12, "R13": UC_X86_REG_R13, "R14": UC_X86_REG_R14,
+            "R15": UC_X86_REG_R15,
+    }
+    pc_reg_name = "RIP"
+    pc_reg_value = UC_X86_REG_RIP
 
 
 class UcWrapCPU_arml(UcWrapCPU):
@@ -340,6 +359,7 @@ class UcWrapCPU_mips32b(UcWrapCPU):
 
 
 UcWrapCPU_x86_32.register("x86", 32)
+UcWrapCPU_x86_64.register("x86", 64)
 UcWrapCPU_arml.register("arm", "l")
 UcWrapCPU_armb.register("arm", "b")
 UcWrapCPU_mips32l.register("mips32", "l")
