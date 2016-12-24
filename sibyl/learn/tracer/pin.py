@@ -27,7 +27,9 @@ class TracerPin(Tracer):
         tmpName = tmp.name
         tmp.close()
 
-        cmd = ["pin", "-t", os.path.dirname(sibyl.__path__[0]) + "/ext/pintool/pintool.so", "-a", hex(self.address), "-o", tmpName, "--", "./" + self.program]
+        pin_root = os.environ.get("PIN_ROOT", "")
+
+        cmd = [os.path.join(pin_root, "pin"), "-ifeellucky", "-t", os.path.dirname(sibyl.__path__[0]) + "/ext/pin_tracer/pin_tracer.so", "-a", "0x%x" % self.address, "-o", tmpName, "--", "./" + self.program]
         self._run_cmd(cmd)
 
         return tmpName
