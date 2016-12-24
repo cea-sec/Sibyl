@@ -66,14 +66,14 @@ ret = (result == expectedResult)
 
 # WARNING: any change to checkAllocWithoutRefTemplate have to be reported to checkAllocWithRefTemplate
 checkAllocWithoutRefTemplate = '''
-addrList = {addrList}
+addrList = [{addrList}]
 
 ret = ret and all([self._ensure_mem(offset + self.segBase{n}[segment], data) for ((offset, segment),data) in addrList])
 '''
 
 # WARNING: any change to checkAllocWithRefTemplate have to be reported to checkAllocWithoutRefTemplate
 checkAllocWithRefTemplate = '''
-addrList = {addrList}
+addrList = [{addrList}]
 
 refs = {refs}
 ptrSize = self.abi.ira.sizeof_pointer()
@@ -113,6 +113,16 @@ def addrTupleStr(t):
     ((offset, seg), value, access) = t
     return "((0x%x, %i), %r, %s)" % (offset, seg, value, accessToStr(access))
 
+def addrTupleStrNoAccess(t):
+    '''Return a string representing the memory aera given in argument'''
+    ((offset, seg), value) = t
+    return "((0x%x, %i), %r)" % (offset, seg, value)
+
+def refStr(k, v):
+    return argListStr(k) + ": " + "[" + ", ".join(argListStr(a) for a in v) + "]"
+
+def refsStr(r):
+    return "{" + ",".join([refStr(k,v) for k,v in r.iteritems()]) + "}"
 
 class PythonGenerator(Generator):
 
@@ -220,7 +230,7 @@ class PythonGenerator(Generator):
             addPass = False
 
         if refsInMem:
-            self.printer.add_block(refUpdateTemplate.format(refs=repr(refsInMem), n=number))
+            self.printer.add_block(refUpdateTemplate.format(refs=refsStr(refsInMem), n=number))
             addPass = False
 
         if argList:
@@ -284,13 +294,16 @@ class PythonGenerator(Generator):
 
         self.printer.add_lvl()
 
-        self.printer.add_block(checkResultTemplate.format(expectedResult=res, n=number))
+        self.printer.add_block(checkResultTemplate.format(expectedResult=argListStr(res), n=number))
 
         if addrList:
             if refsInMem:
-                self.printer.add_block(checkAllocWithRefTemplate.format(addrList=addrList, n=number,refs=repr(refsInMem)))
+                self.printer.add_block(checkAllocWithRefTemplate.format(addrList=",\n\t".join(addrTupleStrNoAccess(addr) for addr in addrList),
+                                                                        n=number,
+                                                                        refs=refsStr(refsInMem)))
             else:
-                self.printer.add_block(checkAllocWithoutRefTemplate.format(addrList=addrList, n=number))
+                self.printer.add_block(checkAllocWithoutRefTemplate.format(addrList=",\n\t".join(addrTupleStrNoAccess(addr) for addr in addrList),
+                                                                           n=number))
 
         self.printer.add_block("\nreturn ret")
 
