@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "pin.H"
 
 /* Set pin option and gobal variable for the address of the traced function */
