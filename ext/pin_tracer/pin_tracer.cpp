@@ -47,6 +47,7 @@ VOID RecordMemRead(VOID * ip, VOID * addr, UINT32 size, char* disass)
 		case 4: check_fprintf_error(fprintf(trace,"R %p %x %x %p\n", addr, size, *(uint32_t*)addr, ip));break;
 		case 8: check_fprintf_error(fprintf(trace,"R %p %x %lx %p\n", addr, size, *(uint64_t*)addr, ip));break;
 		case 16: check_fprintf_error(fprintf(trace,"R %p %x %lx%016lx %p\n", addr, size, *(((uint64_t*)addr)+1), *(uint64_t*)addr, ip));break;
+		case 32: check_fprintf_error(fprintf(trace,"R %p %x %lx%032lx %p\n", addr, size, *(((uint64_t*)addr)+1), *(uint64_t*)addr, ip));break;
 		default: fprintf(stderr, "abort: read size is not managed ([%p]%u @%p(%s))\n",addr,size,ip,disass);abort();
 		}
 	}
@@ -66,6 +67,7 @@ VOID RecordMemWriteContent(VOID * ip)
 		case 4: check_fprintf_error(fprintf(trace,"%x %p\n", *(uint32_t*)last_addr, ip));break;
 		case 8: check_fprintf_error(fprintf(trace,"%lx %p\n", *(uint64_t*)last_addr, ip));break;
 		case 16: check_fprintf_error(fprintf(trace,"%lx%016lx %p\n", *(((uint64_t*)last_addr)+1), *(uint64_t*)last_addr, ip));break;
+		case 32: check_fprintf_error(fprintf(trace,"%lx%032lx %p\n", *(((uint64_t*)last_addr)+1), *(uint64_t*)last_addr, ip));break;
 		default: fprintf(stderr, "abort: write size is not managed ([%p]%i @%p)\n", last_addr, last_size, ip); abort();
 		}
 	}
@@ -81,6 +83,7 @@ VOID RecordMemWriteAddr(VOID * ip, VOID * addr, UINT32 size)
 		case 4: check_fprintf_error(fprintf(trace,"W %p %x ", addr, size));break;
 		case 8: check_fprintf_error(fprintf(trace,"W %p %x ", addr, size));break;
 		case 16: check_fprintf_error(fprintf(trace,"W %p %x ", addr, size));break;
+		case 32: check_fprintf_error(fprintf(trace,"W %p %x ", addr, size));break;
 		default: fprintf(stderr, "abort: write size is not managed ([%p]%i @%p)\n", addr, size, ip); abort();
 		}
 		last_size = size;
