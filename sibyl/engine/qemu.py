@@ -147,6 +147,15 @@ class UcWrapVM(object):
 
         return dico
 
+    def is_mapped(self, address, size):
+        for addr in xrange(address, address + size):
+            for page in self.mem_page:
+                if page["addr"] <= addr < page["addr"] + page["size"]:
+                    break
+            else:
+                return False
+        return True
+
     def restore_mem_state(self, mem_state):
         """Restore the memory state according to mem_state
         Optimisation: only consider memory unwrittable"""
