@@ -1,5 +1,5 @@
 # This file is part of Sibyl.
-# Copyright 2014 Camille MOUGEY <camille.mougey@cea.fr>
+# Copyright 2017 Camille MOUGEY <camille.mougey@cea.fr>
 #
 # Sibyl is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -16,9 +16,13 @@
 
 FROM miasm/tested:latest
 MAINTAINER Camille Mougey <camille.mougey@cea.fr>
+USER root
+
+# Get unicorn
+RUN apt-get install -y python-pip &&\
+    pip install --pre unicorn
 
 # Get Sibyl
-USER root
 ADD https://github.com/cea-sec/Sibyl/archive/master.tar.gz /opt/Sibyl.tar.gz
 RUN cd /opt &&\
     tar xzvf Sibyl.tar.gz &&\
