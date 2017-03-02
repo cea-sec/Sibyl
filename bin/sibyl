@@ -1,0 +1,53 @@
+#! /usr/bin/env python
+
+# This file is part of Sibyl.
+# Copyright 2014 - 2017 Camille MOUGEY <camille.mougey@cea.fr>
+#
+# Sibyl is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Sibyl is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+# License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Sibyl. If not, see <http://www.gnu.org/licenses/>.
+"Sibyl client"
+
+import sys
+
+from sibyl.commons import print_table
+from sibyl.actions import ACTIONS
+
+if __name__ == "__main__":
+
+    if len(sys.argv) < 2:
+        print "Usage: %s [action]\n" % sys.argv[0]
+        print "Actions:"
+        # Sort actions by name and print them
+        actions = [(action._name_, action._desc_)
+                   for action in sorted(ACTIONS,
+                                        key=lambda action: action._name_)]
+        print_table(actions,
+                    title=False,
+                    separator=" ")
+        exit(0)
+
+    action = sys.argv[1]
+
+    # Try to guess action
+    guessed = [act for act in ACTIONS if act._name_.startswith(action)]
+    if len(guessed) == 1:
+        # Action found, redirect to it
+        guessed[0](sys.argv[2:])
+    else:
+        # Action not found
+        if len(guessed) == 0:
+            print "Unknown action: %s" % action
+        else:
+            print "Ambiguous action: %s" % " ".join(guessed)
+        exit(-1)
+
