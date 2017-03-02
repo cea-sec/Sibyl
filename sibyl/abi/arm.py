@@ -21,6 +21,7 @@ from sibyl.abi import abi
 class ABI_ARM(abi.ABIRegsStack):
 
     regs_mapping = ["R0", "R1", "R2", "R3"]
+    arch = ["arml", "armb", "armtl", "armtb"]
 
     def set_ret(self, ret_addr):
         self.jitter.cpu.LR = ret_addr

@@ -28,6 +28,7 @@ class ABIStdCall_x86_32(ABIRegsStack_x86):
 
     regs_mapping = [] # Stack only
     RTL = True
+    arch = ["x86_32"]
 
     def vm_push(self, element):
         self.jitter.push_uint32_t(element)
@@ -36,6 +37,7 @@ class ABIStdCall_x86_32(ABIRegsStack_x86):
 class ABIFastCall_x86_32(ABIRegsStack_x86):
 
     regs_mapping = ["ECX", "EDX"]
+    arch = ["x86_32"]
 
     def vm_push(self, element):
         self.jitter.push_uint32_t(element)
@@ -44,6 +46,7 @@ class ABIFastCall_x86_32(ABIRegsStack_x86):
 class ABI_AMD64(ABIRegsStack_x86):
 
     regs_mapping = ["RDI", "RSI", "RDX", "RCX", "R8", "R9"]
+    arch = ["x86_64"]
 
     def vm_push(self, element):
         self.jitter.push_uint64_t(element)

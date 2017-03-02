@@ -21,6 +21,7 @@ from sibyl.abi import abi
 class ABI_MIPS_O32(abi.ABIRegsStack):
 
     regs_mapping = ["A0", "A1", "A2", "A3"]
+    arch = ["mips32b", "mips32l"]
 
     def set_ret(self, ret_addr):
         self.jitter.cpu.RA = ret_addr

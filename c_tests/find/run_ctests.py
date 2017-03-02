@@ -61,11 +61,11 @@ def test_find(args):
 
         # Launch Sibyl
         log_info( "Launch Sibyl" )
-        options = ["-q", "-j", "gcc", "-i", "5"]
+        options = ["-q", "-j", "gcc", "-i", "5", "-b", "ABIStdCall_x86_32"]
         if not args.arch_heuristic:
             options += ["-a", "x86_32"]
 
-        cmd = ["sibyl", "find"] + options + [filename, "ABIStdCall_x86_32"]
+        cmd = ["sibyl", "find"] + options + [filename]
         if not args.func_heuristic:
             cmd += [hex(addr) for addr, f in to_check]
         print " ".join(cmd)

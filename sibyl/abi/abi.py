@@ -18,6 +18,9 @@
 class ABI(object):
     "Parent class, stand for an ABI"
 
+    # Associated architectures
+    arch = []
+
     def __init__(self, jitter, ira):
         self.jitter = jitter
         self.ira = ira

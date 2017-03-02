@@ -48,13 +48,13 @@ class ActionFind(Action):
     _args_ = [
         # Mandatory
         (["filename"], {"help": "File to load"}),
-        (["abi"], {"help": "ABI to use",
-                   "choices": [x.__name__ for x in ABIS]}),
         (["address"], {"help": "Address of the function under test",
-                     "nargs": "*"}),
+                       "nargs": "*"}),
         # Optional
         (["-a", "--architecture"], {"help": "Target architecture",
                                     "choices": Machine.available_machine()}),
+        (["-b", "--abi"], {"help": "ABI to use",
+                           "choices": [x.__name__ for x in ABIS]}),
         (["-t", "--tests"], {"help": "Tests to run",
                              "nargs": "*",
                              "choices": ["all"] + AVAILABLE_TESTS.keys(),
@@ -130,13 +130,26 @@ class ActionFind(Action):
             cpu_count = lambda: 1
             Process = FakeProcess
 
-        for abicls in ABIS:
-            if self.args.abi == abicls.__name__:
-                break
+        # Select ABI
+        if self.args.abi is None:
+            candidates = set(abicls for abicls in ABIS
+                             if architecture in abicls.arch)
+            if not candidates:
+                raise ValueError("No ABI for architecture %s" % architecture)
+            if len(candidates) > 1:
+                print "Please specify the ABI:"
+                print "\t" + "\n\t".join(cand.__name__ for cand in candidates)
+                exit(0)
+            abicls = candidates.pop()
         else:
-            raise ValueError("Unknown ABI name: %s" % self.args.abi)
+            for abicls in ABIS:
+                if self.args.abi == abicls.__name__:
+                    break
+            else:
+                raise ValueError("Unknown ABI name: %s" % self.args.abi)
         self.abicls = abicls
 
+        # Select Test set
         self.tests = []
         for tname, tcases in AVAILABLE_TESTS.items():
             if "all" in self.args.tests or tname in self.args.tests:
