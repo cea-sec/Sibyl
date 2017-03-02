@@ -8,7 +8,7 @@ from utils.log import log_error, log_success, log_info
 from elfesteem.elf_init import ELF
 
 def test_find(args):
-    
+
     custom_tag = "my_"
     whitelist_funcs = ["main"]
 
@@ -17,7 +17,7 @@ def test_find(args):
     os.system("make clean")
     log_info( "Compile C files" )
     status = os.system("make")
-    
+
     # Find test names
     c_files = []
 
@@ -65,7 +65,7 @@ def test_find(args):
         if not args.arch_heuristic:
             options += ["-a", "x86_32"]
 
-        cmd = ["python", "../../find.py"] + options + [filename, "ABIStdCall_x86_32"]
+        cmd = ["sibyl", "find"] + options + [filename, "ABIStdCall_x86_32"]
         if not args.func_heuristic:
             cmd += [hex(addr) for addr, f in to_check]
         print " ".join(cmd)
