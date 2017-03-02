@@ -35,5 +35,7 @@ Sibyl is a tool aiming at recognizing functions in binaries based on their side
         'miasm2',
     ],
     packages=['sibyl', 'sibyl/abi', 'sibyl/engine', 'sibyl/learn',
+              'sibyl/learn/tracer', 'sibyl/learn/generator',
               'sibyl/heuristics', 'sibyl/test', 'sibyl/actions'],
+    scripts=['bin/sibyl'],
 )
