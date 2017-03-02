@@ -41,6 +41,7 @@ class FakeProcess(object):
 
 
 class ActionFind(Action):
+    """Action for actually launching function guessing"""
 
     _name_ = "find"
     _desc_ = "Function guesser"

@@ -33,7 +33,8 @@ if __name__ == "__main__":
                                         key=lambda action: action._name_)]
         print_table(actions,
                     title=False,
-                    separator=" ")
+                    separator=" ",
+                    level=1)
         exit(0)
 
     action = sys.argv[1]
