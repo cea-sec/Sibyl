@@ -17,11 +17,11 @@ args = parser.parse_args()
 
 def run_test(test_func, args):
     log_info("Start test: "+test_func.__module__)
-    
+
     module_path = os.path.dirname(test_func.__module__.replace('.','/'))
     previous_cwd = os.getcwd()
-    
-    os.chdir(previous_cwd+'/'+module_path+'/')
+
+    os.chdir(os.path.join(previous_cwd, module_path))
     test_func(args)
     os.chdir(previous_cwd)
 
