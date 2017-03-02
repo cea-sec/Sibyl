@@ -48,17 +48,16 @@ class ActionFind(Action):
     _args_ = [
         # Mandatory
         (["filename"], {"help": "File to load"}),
-        (["abi"], {"help": "ABI to used. Available: " + \
-                   # TODO: use available option of ArgumentParser
-                 ",".join([x.__name__ for x in ABIS])}),
+        (["abi"], {"help": "ABI to use",
+                   "choices": [x.__name__ for x in ABIS]}),
         (["address"], {"help": "Address of the function under test",
                      "nargs": "*"}),
         # Optional
-        (["-a", "--architecture"], {"help": "Architecture used. Available: " + \
-                                    ",".join(Machine.available_machine())}),
-        (["-t", "--tests"], {"help": "Tests to run. Available: all," + \
-                             ",".join(AVAILABLE_TESTS.keys()),
+        (["-a", "--architecture"], {"help": "Target architecture",
+                                    "choices": Machine.available_machine()}),
+        (["-t", "--tests"], {"help": "Tests to run",
                              "nargs": "*",
+                             "choices": ["all"] + AVAILABLE_TESTS.keys(),
                              "default": ["all"]}),
         (["-v", "--verbose"], {"help": "Verbose mode",
                                "action": "store_true"}),
@@ -69,8 +68,8 @@ class ActionFind(Action):
                                "type": int}),
         (["-m", "--mapping-base"], {"help": "Binary mapping address",
                                     "default": "0"}),
-        (["-j", "--jitter"], {"help": """Jitter engine.
-Available: gcc (default), tcc, llvm, python, qemu""",
+        (["-j", "--jitter"], {"help": "Jitter engine",
+                              "choices": ["gcc", "tcc", "llvm", "python", "qemu"],
                               "default": "gcc"}),
         (["-p", "--monoproc"], {"help": "Launch tests in a single process",
                                 "action": "store_true"}),
