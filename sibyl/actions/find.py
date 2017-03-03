@@ -15,6 +15,8 @@
 # along with Sibyl. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import json
+import sys
 from collections import namedtuple
 
 from miasm2.analysis.machine import Machine
@@ -76,8 +78,12 @@ class ActionFind(Action):
         (["-j", "--jitter"], {"help": "Jitter engine",
                               "choices": ["gcc", "tcc", "llvm", "python", "qemu"],
                               "default": "gcc"}),
-        (["-p", "--monoproc"], {"help": "Launch tests in a single process",
+        (["-p", "--monoproc"], {"help": "Launch tests in a single process " \
+                                "(mainly for debug purpose)",
                                 "action": "store_true"}),
+        (["-o", "--output-format"], {"help": "Output format",
+                                     "choices": ["JSON", "human"],
+                                     "default": "human"}),
     ]
 
     def do_test(self, addr_queue, msg_queue):
@@ -109,6 +115,12 @@ class ActionFind(Action):
         from multiprocessing import cpu_count, Queue, Process
 
         # Parse args
+        self.map_addr = int(self.args.mapping_base, 0)
+        if self.args.monoproc:
+            cpu_count = lambda: 1
+            Process = FakeProcess
+
+        # Architecture
         architecture = False
         if self.args.architecture:
             architecture = self.args.architecture
@@ -132,10 +144,6 @@ class ActionFind(Action):
                 print "Found %d addresses" % len(addresses)
         else:
             addresses = [int(addr, 0) for addr in self.args.address]
-        self.map_addr = int(self.args.mapping_base, 0)
-        if self.args.monoproc:
-            cpu_count = lambda: 1
-            Process = FakeProcess
 
         # Select ABI
         if self.args.abi is None:
@@ -161,6 +169,8 @@ class ActionFind(Action):
         for tname, tcases in AVAILABLE_TESTS.items():
             if "all" in self.args.tests or tname in self.args.tests:
                 self.tests += tcases
+        if self.args.verbose > 0:
+            print "Found %d test cases" % len(self.tests)
 
         # Prepare multiprocess
         cpu_c = cpu_count()
@@ -185,6 +195,7 @@ class ActionFind(Action):
 
         # Get results
         nb_poison = 0
+        results = {} # address -> possible functions
         while nb_poison < cpu_c:
             msg = msg_queue.get()
             # Poison pill
@@ -192,11 +203,18 @@ class ActionFind(Action):
                 nb_poison += 1
                 continue
 
-            if msg.results:
-                print "0x%08x : %s" % (msg.address, ",".join(msg.results))
-            elif self.args.verbose > 0:
-                print "No candidate found for 0x%08x" % msg.address
+            # Save result
+            results[msg.address] = msg.results
 
+            # Display status if needed
+            if self.args.verbose > 0:
+                sys.stdout.write("\r%d / %d" % (len(results), len(addresses)))
+                sys.stdout.flush()
+            if msg.results and self.args.output_format == "human":
+                prefix = ""
+                if self.args.verbose > 0:
+                    prefix = "\r"
+                print prefix + "0x%08x : %s" % (msg.address, ",".join(msg.results))
 
         # End connexions
         msg_queue.close()
@@ -208,3 +226,11 @@ class ActionFind(Action):
 
         if not addr_queue.empty():
             raise RuntimeError("An error occured: queue is not empty")
+
+        # Print final results
+        if self.args.output_format == "JSON":
+            print json.dumps({"information": {"total_count": len(addresses),
+                                              "test_cases": len(self.tests)},
+                              "results": results,
+            })
+
