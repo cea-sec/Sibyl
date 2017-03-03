@@ -15,6 +15,10 @@
 # along with Sibyl. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import json
+import sys
+from collections import namedtuple
+
 from miasm2.analysis.machine import Machine
 from miasm2.analysis.binary import Container
 from sibyl.testlauncher import TestLauncher
@@ -24,6 +28,9 @@ from sibyl.heuristics.arch import ArchHeuristic
 from sibyl.heuristics.func import FuncHeuristic
 
 from sibyl.actions.action import Action
+
+# Message exchanged with workers
+MessageTaskDone = namedtuple("MessageTaskDone", ["address", "results"])
 
 
 class FakeProcess(object):
@@ -59,10 +66,10 @@ class ActionFind(Action):
                              "nargs": "*",
                              "choices": ["all"] + AVAILABLE_TESTS.keys(),
                              "default": ["all"]}),
-        (["-v", "--verbose"], {"help": "Verbose mode",
-                               "action": "store_true"}),
-        (["-q", "--quiet"], {"help": "Display only results",
-                             "action": "store_true"}),
+        (["-v", "--verbose"], {"help": "Verbose mode (use multiple time to " \
+                               "increase verbosity level)",
+                               "action": "count",
+                               "default": 0}),
         (["-i", "--timeout"], {"help": "Test timeout (in seconds)",
                                "default": 2,
                                "type": int}),
@@ -71,29 +78,35 @@ class ActionFind(Action):
         (["-j", "--jitter"], {"help": "Jitter engine",
                               "choices": ["gcc", "tcc", "llvm", "python", "qemu"],
                               "default": "gcc"}),
-        (["-p", "--monoproc"], {"help": "Launch tests in a single process",
+        (["-p", "--monoproc"], {"help": "Launch tests in a single process " \
+                                "(mainly for debug purpose)",
                                 "action": "store_true"}),
+        (["-o", "--output-format"], {"help": "Output format",
+                                     "choices": ["JSON", "human"],
+                                     "default": "human"}),
     ]
 
-    def do_test(self, addr_queue):
+    def do_test(self, addr_queue, msg_queue):
         """Multi-process worker for launching on functions"""
 
         # Init components
         tl = TestLauncher(self.args.filename, self.machine, self.abicls,
                           self.tests, self.args.jitter, self.map_addr)
-        if self.args.verbose:
+
+        # Activatate logging INFO on at least -vv
+        if self.args.verbose > 1:
             tl.logger.setLevel(logging.INFO)
+
         # Main loop
         while True:
             address = addr_queue.get()
             if address is None:
                 break
             possible_funcs = tl.run(address, timeout_seconds=self.args.timeout)
+            msg_queue.put(MessageTaskDone(address, possible_funcs))
 
-            if possible_funcs:
-                print "0x%08x : %s" % (address, ",".join(tl.possible_funcs))
-            elif not self.args.quiet:
-                print "No candidate found for 0x%08x" % address
+        # Signal to master the end
+        msg_queue.put(None)
 
     def run(self):
         """Launch search"""
@@ -102,6 +115,12 @@ class ActionFind(Action):
         from multiprocessing import cpu_count, Queue, Process
 
         # Parse args
+        self.map_addr = int(self.args.mapping_base, 0)
+        if self.args.monoproc:
+            cpu_count = lambda: 1
+            Process = FakeProcess
+
+        # Architecture
         architecture = False
         if self.args.architecture:
             architecture = self.args.architecture
@@ -110,25 +129,21 @@ class ActionFind(Action):
                 architecture = ArchHeuristic(fdesc).guess()
             if not architecture:
                 raise ValueError("Unable to recognize the architecture, please specify it")
-            if not self.args.quiet:
+            if self.args.verbose > 0:
                 print "Guessed architecture: %s" % architecture
 
         self.machine = Machine(architecture)
         if not self.args.address:
-            if not self.args.quiet:
+            if self.args.verbose > 0:
                 print "No function address provided, start guessing"
 
             cont = Container.from_stream(open(self.args.filename))
             fh = FuncHeuristic(cont, self.machine)
             addresses = list(fh.guess())
-            if not self.args.quiet:
+            if self.args.verbose > 0:
                 print "Found %d addresses" % len(addresses)
         else:
             addresses = [int(addr, 0) for addr in self.args.address]
-        self.map_addr = int(self.args.mapping_base, 0)
-        if self.args.monoproc:
-            cpu_count = lambda: 1
-            Process = FakeProcess
 
         # Select ABI
         if self.args.abi is None:
@@ -154,30 +169,68 @@ class ActionFind(Action):
         for tname, tcases in AVAILABLE_TESTS.items():
             if "all" in self.args.tests or tname in self.args.tests:
                 self.tests += tcases
+        if self.args.verbose > 0:
+            print "Found %d test cases" % len(self.tests)
 
         # Prepare multiprocess
         cpu_c = cpu_count()
-        queue = Queue()
+        addr_queue = Queue()
+        msg_queue = Queue()
         processes = []
 
         # Add tasks
         for address in addresses:
-            queue.put(address)
+            addr_queue.put(address)
 
         # Add poison pill
         for _ in xrange(cpu_c):
-            queue.put(None)
+            addr_queue.put(None)
 
+        # Launch workers
         for _ in xrange(cpu_c):
-            p = Process(target=self.do_test, args=(queue,))
+            p = Process(target=self.do_test, args=(addr_queue, msg_queue))
             processes.append(p)
             p.start()
+        addr_queue.close()
 
         # Get results
-        queue.close()
-        queue.join_thread()
+        nb_poison = 0
+        results = {} # address -> possible functions
+        while nb_poison < cpu_c:
+            msg = msg_queue.get()
+            # Poison pill
+            if msg is None:
+                nb_poison += 1
+                continue
+
+            # Save result
+            results[msg.address] = msg.results
+
+            # Display status if needed
+            if self.args.verbose > 0:
+                sys.stdout.write("\r%d / %d" % (len(results), len(addresses)))
+                sys.stdout.flush()
+            if msg.results and self.args.output_format == "human":
+                prefix = ""
+                if self.args.verbose > 0:
+                    prefix = "\r"
+                print prefix + "0x%08x : %s" % (msg.address, ",".join(msg.results))
+
+        # End connexions
+        msg_queue.close()
+        msg_queue.join_thread()
+
+        addr_queue.join_thread()
         for p in processes:
             p.join()
 
-        if not queue.empty():
+        if not addr_queue.empty():
             raise RuntimeError("An error occured: queue is not empty")
+
+        # Print final results
+        if self.args.output_format == "JSON":
+            print json.dumps({"information": {"total_count": len(addresses),
+                                              "test_cases": len(self.tests)},
+                              "results": results,
+            })
+

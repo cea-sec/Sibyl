@@ -61,7 +61,7 @@ def test_find(args):
 
         # Launch Sibyl
         log_info( "Launch Sibyl" )
-        options = ["-q", "-j", "gcc", "-i", "5", "-b", "ABIStdCall_x86_32"]
+        options = ["-j", "gcc", "-i", "5", "-b", "ABIStdCall_x86_32"]
         if not args.arch_heuristic:
             options += ["-a", "x86_32"]
 
