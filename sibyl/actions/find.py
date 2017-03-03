@@ -15,6 +15,8 @@
 # along with Sibyl. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+from collections import namedtuple
+
 from miasm2.analysis.machine import Machine
 from miasm2.analysis.binary import Container
 from sibyl.testlauncher import TestLauncher
@@ -24,6 +26,9 @@ from sibyl.heuristics.arch import ArchHeuristic
 from sibyl.heuristics.func import FuncHeuristic
 
 from sibyl.actions.action import Action
+
+# Message exchanged with workers
+MessageTaskDone = namedtuple("MessageTaskDone", ["address", "results"])
 
 
 class FakeProcess(object):
@@ -75,7 +80,7 @@ class ActionFind(Action):
                                 "action": "store_true"}),
     ]
 
-    def do_test(self, addr_queue):
+    def do_test(self, addr_queue, msg_queue):
         """Multi-process worker for launching on functions"""
 
         # Init components
@@ -92,11 +97,10 @@ class ActionFind(Action):
             if address is None:
                 break
             possible_funcs = tl.run(address, timeout_seconds=self.args.timeout)
+            msg_queue.put(MessageTaskDone(address, possible_funcs))
 
-            if possible_funcs:
-                print "0x%08x : %s" % (address, ",".join(tl.possible_funcs))
-            elif self.args.verbose > 0:
-                print "No candidate found for 0x%08x" % address
+        # Signal to master the end
+        msg_queue.put(None)
 
     def run(self):
         """Launch search"""
@@ -160,27 +164,47 @@ class ActionFind(Action):
 
         # Prepare multiprocess
         cpu_c = cpu_count()
-        queue = Queue()
+        addr_queue = Queue()
+        msg_queue = Queue()
         processes = []
 
         # Add tasks
         for address in addresses:
-            queue.put(address)
+            addr_queue.put(address)
 
         # Add poison pill
         for _ in xrange(cpu_c):
-            queue.put(None)
+            addr_queue.put(None)
 
+        # Launch workers
         for _ in xrange(cpu_c):
-            p = Process(target=self.do_test, args=(queue,))
+            p = Process(target=self.do_test, args=(addr_queue, msg_queue))
             processes.append(p)
             p.start()
+        addr_queue.close()
 
         # Get results
-        queue.close()
-        queue.join_thread()
+        nb_poison = 0
+        while nb_poison < cpu_c:
+            msg = msg_queue.get()
+            # Poison pill
+            if msg is None:
+                nb_poison += 1
+                continue
+
+            if msg.results:
+                print "0x%08x : %s" % (msg.address, ",".join(msg.results))
+            elif self.args.verbose > 0:
+                print "No candidate found for 0x%08x" % msg.address
+
+
+        # End connexions
+        msg_queue.close()
+        msg_queue.join_thread()
+
+        addr_queue.join_thread()
         for p in processes:
             p.join()
 
-        if not queue.empty():
+        if not addr_queue.empty():
             raise RuntimeError("An error occured: queue is not empty")
