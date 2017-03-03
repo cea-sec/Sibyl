@@ -59,10 +59,10 @@ class ActionFind(Action):
                              "nargs": "*",
                              "choices": ["all"] + AVAILABLE_TESTS.keys(),
                              "default": ["all"]}),
-        (["-v", "--verbose"], {"help": "Verbose mode",
-                               "action": "store_true"}),
-        (["-q", "--quiet"], {"help": "Display only results",
-                             "action": "store_true"}),
+        (["-v", "--verbose"], {"help": "Verbose mode (use multiple time to " \
+                               "increase verbosity level)",
+                               "action": "count",
+                               "default": 0}),
         (["-i", "--timeout"], {"help": "Test timeout (in seconds)",
                                "default": 2,
                                "type": int}),
@@ -81,8 +81,11 @@ class ActionFind(Action):
         # Init components
         tl = TestLauncher(self.args.filename, self.machine, self.abicls,
                           self.tests, self.args.jitter, self.map_addr)
-        if self.args.verbose:
+
+        # Activatate logging INFO on at least -vv
+        if self.args.verbose > 1:
             tl.logger.setLevel(logging.INFO)
+
         # Main loop
         while True:
             address = addr_queue.get()
@@ -92,7 +95,7 @@ class ActionFind(Action):
 
             if possible_funcs:
                 print "0x%08x : %s" % (address, ",".join(tl.possible_funcs))
-            elif not self.args.quiet:
+            elif self.args.verbose > 0:
                 print "No candidate found for 0x%08x" % address
 
     def run(self):
@@ -110,18 +113,18 @@ class ActionFind(Action):
                 architecture = ArchHeuristic(fdesc).guess()
             if not architecture:
                 raise ValueError("Unable to recognize the architecture, please specify it")
-            if not self.args.quiet:
+            if self.args.verbose > 0:
                 print "Guessed architecture: %s" % architecture
 
         self.machine = Machine(architecture)
         if not self.args.address:
-            if not self.args.quiet:
+            if self.args.verbose > 0:
                 print "No function address provided, start guessing"
 
             cont = Container.from_stream(open(self.args.filename))
             fh = FuncHeuristic(cont, self.machine)
             addresses = list(fh.guess())
-            if not self.args.quiet:
+            if self.args.verbose > 0:
                 print "Found %d addresses" % len(addresses)
         else:
             addresses = [int(addr, 0) for addr in self.args.address]
