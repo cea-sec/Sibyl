@@ -48,17 +48,16 @@ class ActionFind(Action):
     _args_ = [
         # Mandatory
         (["filename"], {"help": "File to load"}),
-        (["abi"], {"help": "ABI to used. Available: " + \
-                   # TODO: use available option of ArgumentParser
-                 ",".join([x.__name__ for x in ABIS])}),
         (["address"], {"help": "Address of the function under test",
-                     "nargs": "*"}),
+                       "nargs": "*"}),
         # Optional
-        (["-a", "--architecture"], {"help": "Architecture used. Available: " + \
-                                    ",".join(Machine.available_machine())}),
-        (["-t", "--tests"], {"help": "Tests to run. Available: all," + \
-                             ",".join(AVAILABLE_TESTS.keys()),
+        (["-a", "--architecture"], {"help": "Target architecture",
+                                    "choices": Machine.available_machine()}),
+        (["-b", "--abi"], {"help": "ABI to use",
+                           "choices": [x.__name__ for x in ABIS]}),
+        (["-t", "--tests"], {"help": "Tests to run",
                              "nargs": "*",
+                             "choices": ["all"] + AVAILABLE_TESTS.keys(),
                              "default": ["all"]}),
         (["-v", "--verbose"], {"help": "Verbose mode",
                                "action": "store_true"}),
@@ -69,8 +68,8 @@ class ActionFind(Action):
                                "type": int}),
         (["-m", "--mapping-base"], {"help": "Binary mapping address",
                                     "default": "0"}),
-        (["-j", "--jitter"], {"help": """Jitter engine.
-Available: gcc (default), tcc, llvm, python, qemu""",
+        (["-j", "--jitter"], {"help": "Jitter engine",
+                              "choices": ["gcc", "tcc", "llvm", "python", "qemu"],
                               "default": "gcc"}),
         (["-p", "--monoproc"], {"help": "Launch tests in a single process",
                                 "action": "store_true"}),
@@ -131,13 +130,26 @@ Available: gcc (default), tcc, llvm, python, qemu""",
             cpu_count = lambda: 1
             Process = FakeProcess
 
-        for abicls in ABIS:
-            if self.args.abi == abicls.__name__:
-                break
+        # Select ABI
+        if self.args.abi is None:
+            candidates = set(abicls for abicls in ABIS
+                             if architecture in abicls.arch)
+            if not candidates:
+                raise ValueError("No ABI for architecture %s" % architecture)
+            if len(candidates) > 1:
+                print "Please specify the ABI:"
+                print "\t" + "\n\t".join(cand.__name__ for cand in candidates)
+                exit(0)
+            abicls = candidates.pop()
         else:
-            raise ValueError("Unknown ABI name: %s" % self.args.abi)
+            for abicls in ABIS:
+                if self.args.abi == abicls.__name__:
+                    break
+            else:
+                raise ValueError("Unknown ABI name: %s" % self.args.abi)
         self.abicls = abicls
 
+        # Select Test set
         self.tests = []
         for tname, tcases in AVAILABLE_TESTS.items():
             if "all" in self.args.tests or tname in self.args.tests:
