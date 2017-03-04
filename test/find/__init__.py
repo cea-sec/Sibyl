@@ -1,1 +1,1 @@
-__all__ = []
+from .run_ctests import test_find

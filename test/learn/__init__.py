@@ -1,1 +1,1 @@
-__all__ = []
+from .run_tests import test_learn

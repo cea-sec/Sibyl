@@ -54,11 +54,11 @@ class ActionLearn(Action):
 
         # If function address is not set then use the symbol address
         if self.args.address is None:
-            cont = Container.from_stream(open(args.program))
+            cont = Container.from_stream(open(self.args.program))
             try:
                 address = cont.symbol_pool[self.args.functionname].offset
             except KeyError:
-                raise ValueError("Symbol %s does not exists in %s" % (args.functionname, args.program))
+                raise ValueError("Symbol %s does not exists in %s" % (self.args.functionname, self.args.program))
         else:
             address = int(self.args.address, 0)
 
