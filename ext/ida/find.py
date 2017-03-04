@@ -13,19 +13,17 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Sibyl. If not, see <http://www.gnu.org/licenses/>.
-import sys
 import os
+import json
 import subprocess
 import time
 
 from idaapi import *
-import idautils
 
 from sibyl.test import AVAILABLE_TESTS
 
 # Find SIBYL find.py
-cur_script = sys.argv[0]
-identify_binary = os.path.join(os.path.dirname(cur_script), "find.py")
+identify_binary = "sibyl"
 env = os.environ
 
 # Sibyl launching
@@ -36,27 +34,16 @@ def parse_output(command_line):
                                stdout=subprocess.PIPE,
                                env=env)
 
-    while True:
-        line = process.stdout.readline()
-        line = line.strip()
-
-        if not line and process.poll() != None:
-            # No more output, end reached
-            break
-
-        if " : " not in line:
-            print "Unable to parse '%s'" % line
-            continue
-
-        infos = line.split(" : ")
-        addr = int(infos[0], 0)
-        candidates = infos[1].split(",")
-        yield addr, candidates
-
+    result, _ = process.communicate()
 
     if process.returncode != 0:
         # An error occured
         raise RuntimeError("An error occured, please consult the console")
+
+    for result in json.loads(result)["results"]:
+        address, candidates = result["address"], result["functions"]
+        if candidates:
+            yield address, map(str, candidates)
 
 
 def handle_found(addr, candidates):
@@ -70,7 +57,7 @@ def handle_found(addr, candidates):
 
 
 def launch_on_funcs(architecture, abi, funcs, test_set, map_addr=None,
-                    jitter="tcc", buf_size=2000):
+                    jitter="gcc", buf_size=2000):
     """Launch identification on functions.
     @architecture: str standing for current architecture
     @abi: str standing for expected ABI
@@ -79,7 +66,7 @@ def launch_on_funcs(architecture, abi, funcs, test_set, map_addr=None,
     Optional arguments:
     @map_addr: (optional) the base address where the binary has to be loaded if
     format is not recognized
-    @jitter: (optional) jitter engine to use (tcc, llvm, python)
+    @jitter: (optional) jitter engine to use (gcc, tcc, llvm, python, qemu)
     @buf_size: (optional) number of argument to pass to each instance of sibyl.
     High number means speed; low number means less ressources and higher
     frequency of report
@@ -103,16 +90,17 @@ def launch_on_funcs(architecture, abi, funcs, test_set, map_addr=None,
 
     # Launch identification
     print "Launch identification on %d function(s)" % nb_func
-    options = ["-j", jitter, "-q", "-t"] + test_set + ["-a", architecture]
+    options = ["-j", jitter, "-t"] + test_set + ["-a", architecture, "-b", abi,
+                                                 "-o", "JSON"]
     options += add_map
     res = {}
 
     for i in xrange(0, len(funcs), buf_size):
         # Build command line
         addresses = funcs[i:i + buf_size]
-        command_line = ["python", identify_binary]
+        command_line = [identify_binary, "find"]
         command_line += options
-        command_line += [filename, abi]
+        command_line += [filename]
         command_line += addresses
 
         # Call Sibyl and keep only stdout

@@ -229,8 +229,10 @@ class ActionFind(Action):
 
         # Print final results
         if self.args.output_format == "JSON":
+            # Expand results to always have the same key, and address as int
             print json.dumps({"information": {"total_count": len(addresses),
                                               "test_cases": len(self.tests)},
-                              "results": results,
+                              "results": [{"address": addr, "functions": result}
+                                          for addr, result in results.iteritems()],
             })
 
