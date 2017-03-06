@@ -21,6 +21,8 @@ from collections import namedtuple
 
 from miasm2.analysis.machine import Machine
 from miasm2.analysis.binary import Container
+
+from sibyl.config import config
 from sibyl.testlauncher import TestLauncher
 from sibyl.test import AVAILABLE_TESTS
 from sibyl.abi import ABIS
@@ -75,9 +77,9 @@ class ActionFind(Action):
                                "type": int}),
         (["-m", "--mapping-base"], {"help": "Binary mapping address",
                                     "default": "0"}),
-        (["-j", "--jitter"], {"help": "Jitter engine",
+        (["-j", "--jitter"], {"help": "Jitter engine (override default one)",
                               "choices": ["gcc", "tcc", "llvm", "python", "qemu"],
-                              "default": "gcc"}),
+                              "default": config.jit_engine}),
         (["-p", "--monoproc"], {"help": "Launch tests in a single process " \
                                 "(mainly for debug purpose)",
                                 "action": "store_true"}),
