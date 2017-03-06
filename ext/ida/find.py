@@ -20,7 +20,7 @@ import time
 
 from idaapi import *
 
-from sibyl.test import AVAILABLE_TESTS
+from sibyl.config import config
 
 # Find SIBYL find.py
 identify_binary = "sibyl"
@@ -133,7 +133,7 @@ customizable parameters
         addr = ScreenEA()
         func = idaapi.get_func(addr)
 
-        tests_choice = "\n".join(map(lambda x: "<%s:{r%s}>" % (x, x), AVAILABLE_TESTS))
+        tests_choice = "\n".join(map(lambda x: "<%s:{r%s}>" % (x, x), config.available_tests))
         Form.__init__(self,
 r"""BUTTON YES* Launch
 BUTTON CANCEL NONE
@@ -153,8 +153,8 @@ Testsets to use:
     'FormChangeCb': Form.FormChangeCb(self.OnFormChange),
     'cMode': Form.RadGroupControl(("rOneFunc", "rAllFunc")),
     'cTest': Form.ChkGroupControl(map(lambda x: "r%s" % x,
-                                      AVAILABLE_TESTS),
-                                  value=(1 << len(AVAILABLE_TESTS)) - 1),
+                                      config.available_tests),
+                                  value=(1 << len(config.available_tests)) - 1),
     'cbFunc': Form.DropdownListControl(
         items=self.available_funcs,
         readonly=False,
@@ -281,10 +281,10 @@ Testsets to use:
     def tests(self):
         """Return the list of test to launch"""
         bitfield = self.cTest.value
-        if bitfield == (1 << len(AVAILABLE_TESTS)) - 1:
+        if bitfield == (1 << len(config.available_tests)) - 1:
             return ["all"]
         tests = []
-        for i, test in enumerate(AVAILABLE_TESTS):
+        for i, test in enumerate(config.available_tests):
             if bitfield & (1 << i):
                 tests.append(test)
         return tests

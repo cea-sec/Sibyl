@@ -20,6 +20,10 @@ import ConfigParser
 
 default_config = {
     "jit_engine": ["qemu", "gcc", "llvm", "tcc", "python"],
+    "tests": {"string": "$SIBYL/test/string.py",
+              "stdlib": "$SIBYL/test/stdlib.py",
+              "ctype": "$SIBYL/test/ctype.py",
+    }
 }
 
 config_paths = [os.path.join(path, 'sibyl.conf')
@@ -44,6 +48,7 @@ class Config(object):
 
         # Init caches
         self._jit_engine = None
+        self._available_tests = None
 
     def parse_files(self, files):
         """Load configuration from @files (which could not exist)"""
@@ -57,6 +62,14 @@ class Config(object):
             # jit_engine = qemu,llvm,gcc
             if cparser.has_option("find", "jit_engine"):
                 self.config["jit_engine"] = cparser.get("find", "jit_engine").split(",")
+
+        # Tests
+        #
+        # [tests]
+        # name = path/to/source.py
+        if cparser.has_section("tests"):
+            for name in cparser.options("tests"):
+                self.config["tests"][name] = cparser.get("tests", name)
 
     @property
     def jit_engine(self):
@@ -85,5 +98,31 @@ class Config(object):
         self._jit_engine = engine
         return engine
 
+    @property
+    def available_tests(self):
+        """Return a dictionnary mapping test group name to corresponding
+        classes"""
+        # Cache
+        if self._available_tests is not None:
+            return self._available_tests
+
+        available_tests = {}
+        # Fetch tests from files
+        import sibyl
+        sibyl_base = sibyl.__path__[0]
+
+        for name, fpath in self.config["tests"].iteritems():
+            # Keyword
+            fpath = fpath.replace("$SIBYL", sibyl_base)
+
+            # Get TESTS
+            context = {}
+            execfile(fpath, context)
+            available_tests[name] = context["TESTS"]
+
+        self._available_tests = available_tests
+        return self._available_tests
+
 
 config = Config(default_config, config_paths)
+
