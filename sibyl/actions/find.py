@@ -21,8 +21,9 @@ from collections import namedtuple
 
 from miasm2.analysis.machine import Machine
 from miasm2.analysis.binary import Container
+
+from sibyl.config import config
 from sibyl.testlauncher import TestLauncher
-from sibyl.test import AVAILABLE_TESTS
 from sibyl.abi import ABIS
 from sibyl.heuristics.arch import ArchHeuristic
 from sibyl.heuristics.func import FuncHeuristic
@@ -64,7 +65,7 @@ class ActionFind(Action):
                            "choices": [x.__name__ for x in ABIS]}),
         (["-t", "--tests"], {"help": "Tests to run",
                              "nargs": "*",
-                             "choices": ["all"] + AVAILABLE_TESTS.keys(),
+                             "choices": ["all"] + config.available_tests.keys(),
                              "default": ["all"]}),
         (["-v", "--verbose"], {"help": "Verbose mode (use multiple time to " \
                                "increase verbosity level)",
@@ -75,9 +76,9 @@ class ActionFind(Action):
                                "type": int}),
         (["-m", "--mapping-base"], {"help": "Binary mapping address",
                                     "default": "0"}),
-        (["-j", "--jitter"], {"help": "Jitter engine",
+        (["-j", "--jitter"], {"help": "Jitter engine (override default one)",
                               "choices": ["gcc", "tcc", "llvm", "python", "qemu"],
-                              "default": "gcc"}),
+                              "default": config.jit_engine}),
         (["-p", "--monoproc"], {"help": "Launch tests in a single process " \
                                 "(mainly for debug purpose)",
                                 "action": "store_true"}),
@@ -166,7 +167,7 @@ class ActionFind(Action):
 
         # Select Test set
         self.tests = []
-        for tname, tcases in AVAILABLE_TESTS.items():
+        for tname, tcases in config.available_tests.iteritems():
             if "all" in self.args.tests or tname in self.args.tests:
                 self.tests += tcases
         if self.args.verbose > 0:

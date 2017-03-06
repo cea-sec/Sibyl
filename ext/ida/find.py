@@ -20,16 +20,14 @@ import time
 
 from idaapi import *
 
-from sibyl.test import AVAILABLE_TESTS
-
 # Find SIBYL find.py
 identify_binary = "sibyl"
 env = os.environ
 
 # Sibyl launching
-def parse_output(command_line):
-    """Parse the output of find.py"""
-
+def exec_cmd(command_line):
+    """Launch the command line @command_line"""
+    global env
     process = subprocess.Popen(command_line,
                                stdout=subprocess.PIPE,
                                env=env)
@@ -39,6 +37,20 @@ def parse_output(command_line):
     if process.returncode != 0:
         # An error occured
         raise RuntimeError("An error occured, please consult the console")
+
+    return result
+
+def available_tests():
+    """Get the available tests"""
+    global identify_binary
+    command_line = [identify_binary, "config", "-V", "available_tests_keys"]
+    return eval(exec_cmd(command_line))
+
+AVAILABLE_TESTS = available_tests()
+
+def parse_output(command_line):
+    """Parse the output of find.py"""
+    result = exec_cmd(command_line)
 
     for result in json.loads(result)["results"]:
         address, candidates = result["address"], result["functions"]
