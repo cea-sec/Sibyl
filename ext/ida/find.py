@@ -20,16 +20,14 @@ import time
 
 from idaapi import *
 
-from sibyl.config import config
-
 # Find SIBYL find.py
 identify_binary = "sibyl"
 env = os.environ
 
 # Sibyl launching
-def parse_output(command_line):
-    """Parse the output of find.py"""
-
+def exec_cmd(command_line):
+    """Launch the command line @command_line"""
+    global env
     process = subprocess.Popen(command_line,
                                stdout=subprocess.PIPE,
                                env=env)
@@ -39,6 +37,20 @@ def parse_output(command_line):
     if process.returncode != 0:
         # An error occured
         raise RuntimeError("An error occured, please consult the console")
+
+    return result
+
+def available_tests():
+    """Get the available tests"""
+    global identify_binary
+    command_line = [identify_binary, "config", "-V", "available_tests_keys"]
+    return eval(exec_cmd(command_line))
+
+AVAILABLE_TESTS = available_tests()
+
+def parse_output(command_line):
+    """Parse the output of find.py"""
+    result = exec_cmd(command_line)
 
     for result in json.loads(result)["results"]:
         address, candidates = result["address"], result["functions"]
@@ -133,7 +145,7 @@ customizable parameters
         addr = ScreenEA()
         func = idaapi.get_func(addr)
 
-        tests_choice = "\n".join(map(lambda x: "<%s:{r%s}>" % (x, x), config.available_tests))
+        tests_choice = "\n".join(map(lambda x: "<%s:{r%s}>" % (x, x), AVAILABLE_TESTS))
         Form.__init__(self,
 r"""BUTTON YES* Launch
 BUTTON CANCEL NONE
@@ -153,8 +165,8 @@ Testsets to use:
     'FormChangeCb': Form.FormChangeCb(self.OnFormChange),
     'cMode': Form.RadGroupControl(("rOneFunc", "rAllFunc")),
     'cTest': Form.ChkGroupControl(map(lambda x: "r%s" % x,
-                                      config.available_tests),
-                                  value=(1 << len(config.available_tests)) - 1),
+                                      AVAILABLE_TESTS),
+                                  value=(1 << len(AVAILABLE_TESTS)) - 1),
     'cbFunc': Form.DropdownListControl(
         items=self.available_funcs,
         readonly=False,
@@ -281,10 +293,10 @@ Testsets to use:
     def tests(self):
         """Return the list of test to launch"""
         bitfield = self.cTest.value
-        if bitfield == (1 << len(config.available_tests)) - 1:
+        if bitfield == (1 << len(AVAILABLE_TESTS)) - 1:
             return ["all"]
         tests = []
-        for i, test in enumerate(config.available_tests):
+        for i, test in enumerate(AVAILABLE_TESTS):
             if bitfield & (1 << i):
                 tests.append(test)
         return tests
