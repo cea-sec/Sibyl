@@ -58,7 +58,7 @@ class ABIRegsStack(ABI):
         self.args = {}
 
     def add_arg(self, number, element):
-        if isinstance(element, int):
+        if isinstance(element, (int, long)):
             self.args[number] = element
         else:
             raise NotImplementedError()
