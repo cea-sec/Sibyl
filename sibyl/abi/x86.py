@@ -27,7 +27,6 @@ class ABIRegsStack_x86(abi.ABIRegsStack):
 class ABIStdCall_x86_32(ABIRegsStack_x86):
 
     regs_mapping = [] # Stack only
-    RTL = True
     arch = ["x86_32"]
 
     def vm_push(self, element):
