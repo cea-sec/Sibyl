@@ -42,7 +42,7 @@ class ABIFastCall_x86_32(ABIRegsStack_x86):
         self.jitter.push_uint32_t(element)
 
 
-class ABI_AMD64(ABIRegsStack_x86):
+class ABI_AMD64_SYSTEMV(ABIRegsStack_x86):
 
     regs_mapping = ["RDI", "RSI", "RDX", "RCX", "R8", "R9"]
     arch = ["x86_64"]
@@ -51,4 +51,19 @@ class ABI_AMD64(ABIRegsStack_x86):
         self.jitter.push_uint64_t(element)
 
 
-ABIS = [ABIStdCall_x86_32, ABIFastCall_x86_32, ABI_AMD64]
+class ABI_AMD64_MS(ABIRegsStack_x86):
+
+    regs_mapping = ["RCX", "RDX", "R8", "R9"]
+    arch = ["x86_64"]
+
+    def vm_push(self, element):
+        self.jitter.push_uint64_t(element)
+
+    def set_ret(self, ret_addr):
+        # Shadow stack reservation: 0x20 bytes
+        for i in xrange(4):
+            self.vm_push(0)
+        super(ABI_AMD64_MS, self).set_ret(ret_addr)
+
+
+ABIS = [ABIStdCall_x86_32, ABIFastCall_x86_32, ABI_AMD64_SYSTEMV, ABI_AMD64_MS]

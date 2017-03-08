@@ -7,7 +7,7 @@ from sibyl.actions.action import Action
 from sibyl.learn.tracer import AVAILABLE_TRACER
 from sibyl.learn.generator import AVAILABLE_GENERATOR
 from sibyl.learn.learn import TestCreator
-from sibyl.abi.x86 import ABI_AMD64
+from sibyl.abi.x86 import ABI_AMD64_SYSTEMV
 
 
 class ActionLearn(Action):
@@ -41,8 +41,8 @@ class ActionLearn(Action):
     ]
 
     def run(self):
-        # Currently only AMD64 ABI is supported by the learning module
-        abi = ABI_AMD64
+        # Currently only AMD64 SYSTEMV ABI is supported by the learning module
+        abi = ABI_AMD64_SYSTEMV
 
         # Currently only x86_64 is supported by the learning module
         machine = "x86_64"
