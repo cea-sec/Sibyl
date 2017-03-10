@@ -16,7 +16,7 @@ But it is a time consuming task. Moreover, this task is made more difficult due 
 
 Tools have been developed to automate this task. Some are based on CFG (Control Flow Graph) signature (_Bindiff_), others on magic constants (_FindCrypt_) or enhanced pattern matching (_FLIRT_).
 
-_Sibyl_ is one of these tools, dynamic analysis oriented and **based on _Miasm2_** (http://code.google.com/p/miasm/).
+_Sibyl_ is one of these tools, dynamic analysis oriented and **based on _Miasm2_** (https://github.com/cea-sec/miasm).
 The idea is to identify the side effects of functions. That way, identification is independent of the used implementation.
 
 Identifications are done thanks to these steps:
