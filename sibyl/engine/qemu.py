@@ -396,6 +396,7 @@ class UcWrapCPU_mips32l(UcWrapCPU):
         }
         self.pc_reg_name = "PC"
         self.pc_reg_value = csts.UC_MIPS_REG_PC
+        super(self.__class__, self).__init__(*args, **kwargs)
 
 
 class UcWrapCPU_mips32b(UcWrapCPU):
