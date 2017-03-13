@@ -27,7 +27,7 @@ from sibyl.testlauncher import TestLauncher
 from sibyl.abi import ABIS
 from sibyl.heuristics.arch import ArchHeuristic
 from sibyl.heuristics.func import FuncHeuristic
-
+from sibyl.commons import print_table
 from sibyl.actions.action import Action
 
 # Message exchanged with workers
@@ -217,6 +217,10 @@ class ActionFind(Action):
                     prefix = "\r"
                 print prefix + "0x%08x : %s" % (msg.address, ",".join(msg.results))
 
+        # Clean output if needed
+        if self.args.verbose > 0:
+            print ""
+
         # End connexions
         msg_queue.close()
         msg_queue.join_thread()
@@ -236,4 +240,15 @@ class ActionFind(Action):
                               "results": [{"address": addr, "functions": result}
                                           for addr, result in results.iteritems()],
             })
+        elif self.args.output_format == "human" and self.args.verbose > 0:
+            # Summarize results
+            title = ["Address", "Candidates"]
+            ligs = [title]
+
+            ligs += [["0x%08x" % addr, ",".join(result)]
+                     for addr, result in sorted(results.iteritems(),
+                                                key=lambda x: x[0])
+                     if result]
+            print_table(ligs, separator="| ")
+
 
