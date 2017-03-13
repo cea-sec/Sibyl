@@ -24,7 +24,7 @@ def test_learn(args):
     os.system("make clean")
     log_info("Compile C files")
     status = os.system("make")
-    assert status==0
+    assert status == 0
 
     # Find test names
     c_files = []
@@ -42,17 +42,18 @@ def test_learn(args):
 
         log_info("Learning "+func_name+ " over "+func_name+".c")
 
-        cmd = ["python", "../../learn.py", "-t", "miasm", "-m", hex(main_addr), func_name, c_file]
+        cmd = ["sibyl", "learn", "-t", "miasm", "-m", hex(main_addr), func_name, c_file]
         sibyl = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = sibyl.communicate()
+        assert sibyl.returncode == 0
 
         log_info("Testing generated class")
 
         mod = imp.new_module("testclass")
         exec stdout in mod.__dict__
-        classTest = getattr(mod, "Test"+c_file)
+        classTest = getattr(mod, "Test" + c_file)
         tl = TestLauncher(c_file, machine, ABI_AMD64, [classTest], "gcc")
-        
+
         possible_funcs = tl.run(func_addr)
         if tl.possible_funcs:
             log_success("Generated class recognize the function "+func_name)

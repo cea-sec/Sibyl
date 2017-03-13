@@ -2,11 +2,14 @@ from argparse import ArgumentParser
 import os
 
 from utils.log import log_info
-from find.run_ctests import test_find
-from learn.run_tests import test_learn
+from find import test_find
+from learn import test_learn
 
+AVAILABLE_TEST = [
+    test_find,
+    test_learn,
+]
 
-AVAILABLE_TEST = [test_find, test_learn]
 
 parser = ArgumentParser("Regression tester")
 parser.add_argument("-f", "--func-heuristic", action="store_true",
@@ -27,4 +30,3 @@ def run_test(test_func, args):
 
 for test in AVAILABLE_TEST:
     run_test(test, args)
-
