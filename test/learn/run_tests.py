@@ -12,7 +12,7 @@ from miasm2.analysis.binary import Container
 sys.path.append(os.path.join(os.getcwd(), "../"))
 
 from sibyl.testlauncher import TestLauncher
-from sibyl.abi.x86 import ABI_AMD64
+from sibyl.abi.x86 import ABI_AMD64_SYSTEMV
 
 
 def test_learn(args):
@@ -52,7 +52,7 @@ def test_learn(args):
         mod = imp.new_module("testclass")
         exec stdout in mod.__dict__
         classTest = getattr(mod, "Test" + c_file)
-        tl = TestLauncher(c_file, machine, ABI_AMD64, [classTest], "gcc")
+        tl = TestLauncher(c_file, machine, ABI_AMD64_SYSTEMV, [classTest], "gcc")
 
         possible_funcs = tl.run(func_addr)
         if tl.possible_funcs:
