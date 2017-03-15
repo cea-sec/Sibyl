@@ -28,10 +28,12 @@ RUN cd /opt &&\
     tar xzvf Sibyl.tar.gz &&\
     rm Sibyl.tar.gz &&\
     mv Sibyl-master Sibyl &&\
-    chown -Rh miasm2 Sibyl
+    chown -Rh miasm2 Sibyl &&\
+    cd Sibyl &&\
+    python setup.py install
 
 # Prepare the environment
 WORKDIR /opt/Sibyl
 USER miasm2
 
-CMD ["/usr/bin/python", "find.py", "-h"]
+CMD ["/usr/local/bin/sibyl"]
