@@ -31,6 +31,7 @@ class ActionConfig(Action):
     def run(self):
         if not self.args.value:
             self.show()
+            exit(0)
 
         if self.args.value.endswith("_keys") and hasattr(config,
                                                          self.args.value[:-5]):
