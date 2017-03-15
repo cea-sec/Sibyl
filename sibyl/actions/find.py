@@ -55,7 +55,9 @@ class ActionFind(Action):
     _args_ = [
         # Mandatory
         (["filename"], {"help": "File to load"}),
-        (["address"], {"help": "Address of the function under test. Use '-' for stdin",
+        (["address"], {"help": "Address of the function under test. Allowed" \
+                       " formats are '112233', '0x11223344', '-' for stdin " \
+                       "and 'filename' for a file containing addresses",
                        "nargs": "+"}),
         # Optional
         (["-a", "--architecture"], {"help": "Target architecture",
@@ -136,11 +138,17 @@ class ActionFind(Action):
         if not self.args.address:
             print "No function address provided. Use 'sibyl func' to discover addresses"
             exit(-1)
-        elif len(self.args.address) == 1 and self.args.address[0] == "-":
-            # Use stdin
-            addresses = [int(addr, 0) for addr in sys.stdin]
-        else:
-            addresses = [int(addr, 0) for addr in self.args.address]
+        addresses = []
+        for address in self.args.address:
+            if address == '-':
+                # Use stdin
+                addresses = [int(addr, 0) for addr in sys.stdin]
+                continue
+            try:
+                addresses.append(int(address, 0))
+            except ValueError:
+                # File
+                addresses = [int(addr, 0) for addr in open(address)]
         if self.args.verbose > 0:
             print "Found %d addresses" % len(addresses)
 
