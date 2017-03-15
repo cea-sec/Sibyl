@@ -2,7 +2,7 @@
 import logging
 import re
 
-from miasm2.core.asmbloc import asm_block_bad, log_asmbloc
+from miasm2.core.asmblock import AsmBlockBad, log_asmblock
 
 from sibyl.heuristics.heuristic import Heuristic
 import sibyl.heuristics.csts as csts
@@ -19,8 +19,8 @@ def recursive_call(func_heur, addresses=None):
     mdis.follow_call = True
 
     # Launch disassembly
-    cur_log_level = log_asmbloc.level
-    log_asmbloc.setLevel(logging.CRITICAL)
+    cur_log_level = log_asmblock.level
+    log_asmblock.setLevel(logging.CRITICAL)
 
     label2block = {}
 
@@ -30,7 +30,7 @@ def recursive_call(func_heur, addresses=None):
         # Merge label2block, take care of disassembly order due to cache
         for node in cfg_temp.nodes():
             label2block.setdefault(node.label, node)
-    log_asmbloc.setLevel(cur_log_level)
+    log_asmblock.setLevel(cur_log_level)
 
     # Find potential addresses
     addresses = {}
@@ -50,7 +50,7 @@ def recursive_call(func_heur, addresses=None):
                     continue
 
                 # Avoid unmapped block and others relative bugs
-                if isinstance(succ, asm_block_bad):
+                if isinstance(succ, AsmBlockBad):
                     continue
 
                 addresses[succ.label.offset] = 1
