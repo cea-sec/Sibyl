@@ -26,7 +26,6 @@ from sibyl.config import config
 from sibyl.testlauncher import TestLauncher
 from sibyl.abi import ABIS
 from sibyl.heuristics.arch import ArchHeuristic
-from sibyl.heuristics.func import FuncHeuristic
 from sibyl.commons import print_table
 from sibyl.actions.action import Action
 
@@ -56,8 +55,10 @@ class ActionFind(Action):
     _args_ = [
         # Mandatory
         (["filename"], {"help": "File to load"}),
-        (["address"], {"help": "Address of the function under test",
-                       "nargs": "*"}),
+        (["address"], {"help": "Address of the function under test. Allowed" \
+                       " formats are '112233', '0x11223344', '-' for stdin " \
+                       "and 'filename' for a file containing addresses",
+                       "nargs": "+"}),
         # Optional
         (["-a", "--architecture"], {"help": "Target architecture",
                                     "choices": Machine.available_machine()}),
@@ -135,16 +136,22 @@ class ActionFind(Action):
 
         self.machine = Machine(architecture)
         if not self.args.address:
-            if self.args.verbose > 0:
-                print "No function address provided, start guessing"
+            print "No function address provided. Use 'sibyl func' to discover addresses"
+            exit(-1)
+        addresses = []
+        for address in self.args.address:
+            if address == '-':
+                # Use stdin
+                addresses = [int(addr, 0) for addr in sys.stdin]
+                continue
+            try:
+                addresses.append(int(address, 0))
+            except ValueError:
+                # File
+                addresses = [int(addr, 0) for addr in open(address)]
+        if self.args.verbose > 0:
+            print "Found %d addresses" % len(addresses)
 
-            cont = Container.from_stream(open(self.args.filename))
-            fh = FuncHeuristic(cont, self.machine)
-            addresses = list(fh.guess())
-            if self.args.verbose > 0:
-                print "Found %d addresses" % len(addresses)
-        else:
-            addresses = [int(addr, 0) for addr in self.args.address]
 
         # Select ABI
         if self.args.abi is None:

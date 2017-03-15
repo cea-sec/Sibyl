@@ -29,6 +29,19 @@ class Heuristic(object):
             self.do_votes()
         return self._votes
 
+    @property
+    def heuristic_names(self):
+        """Return the list of available heuristics"""
+        return [func.__name__ for func in self.heuristics]
+
+    def name2heuristic(self, name):
+        """Return the heuristic named @name"""
+        for func in self.heuristics:
+            if func.__name__ == name:
+                return func
+        else:
+            raise KeyError("Unable to find %s" % name)
+
     def guess(self):
         """Return the best candidate"""
         sorted_votes = sorted(self.votes.iteritems(), key=lambda x:x[1])

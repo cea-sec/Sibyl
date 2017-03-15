@@ -18,9 +18,11 @@
 from sibyl.actions.find import ActionFind
 from sibyl.actions.learn import ActionLearn
 from sibyl.actions.config import ActionConfig
+from sibyl.actions.func import ActionFunc
 
 
 ACTIONS = (ActionFind,
            ActionLearn,
            ActionConfig,
+           ActionFunc,
 )
