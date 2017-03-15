@@ -64,10 +64,10 @@ class ActionFind(Action):
                                     "choices": Machine.available_machine()}),
         (["-b", "--abi"], {"help": "ABI to use",
                            "choices": [x.__name__ for x in ABIS]}),
-        (["-t", "--tests"], {"help": "Tests to run",
-                             "nargs": "*",
-                             "choices": ["all"] + config.available_tests.keys(),
-                             "default": ["all"]}),
+        (["-t", "--tests"], {"help": "Tests to run (default is all)",
+                             "choices": config.available_tests.keys(),
+                             "default": [],
+                             "action": "append"}),
         (["-v", "--verbose"], {"help": "Verbose mode (use multiple time to " \
                                "increase verbosity level)",
                                "action": "count",
@@ -175,7 +175,7 @@ class ActionFind(Action):
         # Select Test set
         self.tests = []
         for tname, tcases in config.available_tests.iteritems():
-            if "all" in self.args.tests or tname in self.args.tests:
+            if not self.args.tests or tname in self.args.tests:
                 self.tests += tcases
         if self.args.verbose > 0:
             print "Found %d test cases" % len(self.tests)
