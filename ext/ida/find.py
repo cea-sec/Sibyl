@@ -69,7 +69,7 @@ def handle_found(addr, candidates):
 
 
 def launch_on_funcs(architecture, abi, funcs, test_set, map_addr=None,
-                    jitter="gcc", buf_size=2000):
+                    jitter=None, buf_size=2000):
     """Launch identification on functions.
     @architecture: str standing for current architecture
     @abi: str standing for expected ABI
@@ -102,8 +102,9 @@ def launch_on_funcs(architecture, abi, funcs, test_set, map_addr=None,
 
     # Launch identification
     print "Launch identification on %d function(s)" % nb_func
-    options = ["-j", jitter, "-t"] + test_set + ["-a", architecture, "-b", abi,
-                                                 "-o", "JSON"]
+    options = ["-t"] + test_set + ["-a", architecture, "-b", abi, "-o", "JSON"]
+    if jitter is not None:
+        options += ["-j", jitter]
     options += add_map
     res = {}
 
