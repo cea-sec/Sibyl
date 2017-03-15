@@ -25,22 +25,26 @@ class ActionConfig(Action):
 
     _name_ = "config"
     _desc_ = "Configuration management"
-    _args_ = [(("-V", "--value"), {"help": "Return the value of a specific option"}),
+    _args_ = [
+        (("-V", "--value"), {"help": "Return the value of a specific option"}),
+        (("-d", "--dump"), {"help": "Dump the current configuration",
+                            "action": "store_true"}),
     ]
 
     def run(self):
-        if not self.args.value:
-            self.show()
-            exit(0)
-
-        if self.args.value.endswith("_keys") and hasattr(config,
-                                                         self.args.value[:-5]):
-            val = getattr(config, self.args.value[:-5]).keys()
-        elif hasattr(config, self.args.value):
-            val = getattr(config, self.args.value)
+        if self.args.dump:
+            print "\n".join(config.dump())
+        elif self.args.value:
+            if self.args.value.endswith("_keys") and hasattr(config,
+                                                             self.args.value[:-5]):
+                val = getattr(config, self.args.value[:-5]).keys()
+            elif hasattr(config, self.args.value):
+                val = getattr(config, self.args.value)
+            else:
+                val = "ERROR"
+            print val
         else:
-            val = "ERROR"
-        print val
+            self.show()
 
     def show(self):
         # Configuration files
