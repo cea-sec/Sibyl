@@ -71,6 +71,22 @@ class Config(object):
             for name in cparser.options("tests"):
                 self.config["tests"][name] = cparser.get("tests", name)
 
+    def dump(self):
+        """Dump the current configuration as a config file"""
+        out = []
+
+        # Find
+        out.append("[find]")
+        out.append("jit_engine = %s" % ",".join(self.config["jit_engine"]))
+
+        # Tests
+        out.append("")
+        out.append("[tests]")
+        for name, path in self.config["tests"].iteritems():
+            out.append("%s = %s" % (name, path))
+
+        return out
+
     @property
     def jit_engine(self):
         """Name of engine to use for jit"""

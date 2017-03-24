@@ -102,7 +102,9 @@ def launch_on_funcs(architecture, abi, funcs, test_set, map_addr=None,
 
     # Launch identification
     print "Launch identification on %d function(s)" % nb_func
-    options = ["-t"] + test_set + ["-a", architecture, "-b", abi, "-o", "JSON"]
+    options = ["-a", architecture, "-b", abi, "-o", "JSON"]
+    for test_name in test_set:
+        options = ["-t", test_name]
     if jitter is not None:
         options += ["-j", jitter]
     options += add_map
