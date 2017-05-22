@@ -20,7 +20,7 @@
 import sys
 
 from sibyl.commons import print_table
-from sibyl.actions import ACTIONS
+from sibyl.actions import ACTIONS, load_action
 
 if __name__ == "__main__":
 
@@ -28,9 +28,9 @@ if __name__ == "__main__":
         print "Usage: %s [action]\n" % sys.argv[0]
         print "Actions:"
         # Sort actions by name and print them
-        actions = [(action._name_, action._desc_)
+        actions = [(action.name, action.desc)
                    for action in sorted(ACTIONS,
-                                        key=lambda action: action._name_)]
+                                        key=lambda action: action.name)]
         print_table(actions,
                     title=False,
                     separator=" ",
@@ -40,10 +40,10 @@ if __name__ == "__main__":
     action = sys.argv[1]
 
     # Try to guess action
-    guessed = [act for act in ACTIONS if act._name_.startswith(action)]
+    guessed = [act for act in ACTIONS if act.name.startswith(action)]
     if len(guessed) == 1:
         # Action found, redirect to it
-        guessed[0](sys.argv[2:])
+        load_action(guessed[0], sys.argv[2:])
     else:
         # Action not found
         if len(guessed) == 0:
