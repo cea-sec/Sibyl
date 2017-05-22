@@ -15,14 +15,19 @@
 # along with Sibyl. If not, see <http://www.gnu.org/licenses/>.
 "Sibyl actions implementations"
 
-from sibyl.actions.find import ActionFind
-from sibyl.actions.learn import ActionLearn
-from sibyl.actions.config import ActionConfig
-from sibyl.actions.func import ActionFunc
+from collections import namedtuple
+from importlib import import_module
 
+ActionDesc = namedtuple("ActionDesc", ["name", "desc", "module", "classname"])
 
-ACTIONS = (ActionFind,
-           ActionLearn,
-           ActionConfig,
-           ActionFunc,
-)
+ACTIONS = [
+    ActionDesc("config", "Configuration management", "config", "ActionConfig"),
+    ActionDesc("find", "Function guesser", "find", "ActionFind"),
+    ActionDesc("func", "Function discovering", "func", "ActionFunc"),
+    ActionDesc("learn", "Learn a new function", "learn", "ActionLearn"),
+]
+
+def load_action(actiondesc, args):
+    "Load the action associated to @actiondesc with arguments @args"
+    mod = import_module(".%s" % actiondesc.module, "sibyl.actions")
+    return getattr(mod, actiondesc.classname)(args)
