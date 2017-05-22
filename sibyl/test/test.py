@@ -116,6 +116,15 @@ class Test(object):
         except RuntimeError:
             return False
 
+    def _ensure_mem_sparse(self, addr, element, offsets):
+        """@offsets: offsets to ignore"""
+        for i, sub_element in enumerate(element):
+            if i in offsets:
+                continue
+            if not self._ensure_mem(addr + i, sub_element):
+                return False
+        return True
+
     def _as_int(self, element):
         int_size = self.abi.ira.sizeof_int()
         max_val = 2**int_size

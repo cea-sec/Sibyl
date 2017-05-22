@@ -1,5 +1,12 @@
 """Common / shared elements"""
 import logging
+try:
+    import pycparser
+except ImportError:
+    pycparser = None
+else:
+    from miasm2.core.ctypesmngr import c_to_ast, CTypeFunc
+    from miasm2.core.objc import ObjCPtr, ObjCArray
 
 def init_logger(name):
     logger = logging.getLogger(name)
@@ -37,3 +44,74 @@ def print_table(ligs, title=True, separator='|', level=0, align=""):
         if i == 1 and title:
             print "%s%s" % (tab, "-" * len(fmt.format(*lig)))
         print "%s%s" % (tab, fmt.format(*lig))
+
+class HeaderFile(object):
+    """Abstract representation of a Header file"""
+
+    def __init__(self, header_data, ctype_manager):
+        """Parse @header_data to fill @ctype_manager
+        @header_data: str of a C-like header file
+        @ctype_manager: miasm2.core.objc.CTypesManager instance"""
+        self.data = header_data
+        self.ctype_manager = ctype_manager
+
+        # We can't use add_c_decl, because we need the AST to get back
+        # function's arguments name
+        self.ast = c_to_ast(header_data)
+        self.ctype_manager.types_ast.add_c_decl(header_data)
+        self.functions = {} # function name -> FuncPrototype
+
+        if pycparser is None:
+            raise ImportError("pycparser module is needed to parse header file")
+        self.parse_functions()
+
+    def parse_functions(self):
+        """Search for function declarations"""
+
+        for ext in self.ast.ext:
+            if not (isinstance(ext, pycparser.c_ast.Decl) and
+                    isinstance(ext.type, (pycparser.c_ast.FuncDecl,
+                                          pycparser.c_ast.FuncDef))):
+                continue
+            func_name = ext.name
+            objc_func = self.ctype_manager.get_objc(CTypeFunc(func_name))
+
+            args_order = []
+            args = {}
+            for i, param in enumerate(ext.type.args.params):
+                args_order.append(param.name)
+                args[param.name] = objc_func.args[i]
+
+            self.functions[func_name] = FuncPrototype(func_name,
+                                                      objc_func.type_ret,
+                                                      *args_order, **args)
+
+def objc_is_dereferenceable(target_type):
+    """Return True if target_type may be used as a pointer
+    @target_type: ObjC"""
+    return isinstance(target_type, (ObjCPtr, ObjCArray))
+
+
+def expr_to_types(c_handler, expr):
+    """Return the types of @expr, based on @c_handler knowledge"""
+    # XXX Temporary bug fix for c_handler.expr_to_types, as the current version
+    # does not support partial offsets
+    return [x.ctype for x in c_handler.access_c_gen.get_access(expr).info]
+
+
+class FuncPrototype(object):
+    """Stand for a function's prototype"""
+
+    def __init__(self, func_name, func_type, *args, **kwargs):
+        """Init a prototype for @func_type @func_name(@kwargs (name -> type) )
+        """
+        self.func_name = func_name
+        self.func_type = func_type
+        self.args = kwargs
+        self.args_order = args
+
+    def __str__(self):
+        return "%s %s(%s)" % (self.func_type.name,
+                              self.func_name,
+                              ", ".join("%s %s" % (self.args[name], name)
+                                        for name in self.args_order))
