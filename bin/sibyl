@@ -49,6 +49,7 @@ if __name__ == "__main__":
         if len(guessed) == 0:
             print "Unknown action: %s" % action
         else:
-            print "Ambiguous action: %s" % " ".join(guessed)
+            print "Ambiguous action: %s" % " ".join(guess.name
+                                                    for guess in guessed)
         exit(-1)
 
