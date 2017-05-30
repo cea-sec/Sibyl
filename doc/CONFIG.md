@@ -34,6 +34,9 @@ jit_engine = qemu,gcc,llvm,tcc,python
 ctype = $SIBYL/test/ctype.py
 string = $SIBYL/test/string.py
 stdlib = $SIBYL/test/stdlib.py
+
+[miasm]
+jit_engine = gcc,llvm,tcc,python
 ```
 
 ### Section 'find'
@@ -58,6 +61,16 @@ The list of registered tests can be obtain withe
 `sibyl config -V available_tests_keys`.
 
 For more information on tests, please refer to the corresponding documentation.
+
+### Section 'miasm'
+
+This section highlights options relative to Miasm use.
+
+The `miasm_engine` parameter is a list, separated by ',', of jitter engine
+preference when Miasm is used.
+If the first engine is not available, then the second is used, and so on.
+
+To known the jitter engine elected, use `sibyl config -V miasm_engine`.
 
 ### Configuration overview
 
