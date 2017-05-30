@@ -104,7 +104,7 @@ def launch_on_funcs(architecture, abi, funcs, test_set, map_addr=None,
     print "Launch identification on %d function(s)" % nb_func
     options = ["-a", architecture, "-b", abi, "-o", "JSON"]
     for test_name in test_set:
-        options = ["-t", test_name]
+        options += ["-t", test_name]
     if jitter is not None:
         options += ["-j", jitter]
     options += add_map
@@ -296,8 +296,6 @@ Testsets to use:
     def tests(self):
         """Return the list of test to launch"""
         bitfield = self.cTest.value
-        if bitfield == (1 << len(AVAILABLE_TESTS)) - 1:
-            return ["all"]
         tests = []
         for i, test in enumerate(AVAILABLE_TESTS):
             if bitfield & (1 << i):
