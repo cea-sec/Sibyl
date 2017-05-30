@@ -11,6 +11,7 @@ from miasm2.ir.ir import AssignBlock
 from miasm2.core.objc import CHandler
 
 from sibyl.commons import objc_is_dereferenceable, expr_to_types
+from sibyl.config import config
 
 
 class EmulatedSymbExecWithModif(EmulatedSymbExec):
@@ -310,7 +311,7 @@ class ExtractRef(object):
         true if the snapshot has recognized the function, false else.'''
 
         # TODO inherit from Replay
-        jitter = self.machine.jitter("python")
+        jitter = self.machine.jitter(config.miasm_engine)
 
         vm_load_elf(jitter.vm, open(self.filename, "rb").read())
 

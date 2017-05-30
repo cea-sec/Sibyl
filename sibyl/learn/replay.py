@@ -4,6 +4,8 @@ from miasm2.jitter.loader.elf import vm_load_elf
 from miasm2.analysis.machine import Machine
 from miasm2.jitter.csts import PAGE_READ, PAGE_WRITE, EXCEPT_ACCESS_VIOL, EXCEPT_DIV_BY_ZERO, EXCEPT_PRIV_INSN
 
+from sibyl.config import config
+
 
 class Replay(object):
     '''
@@ -78,7 +80,7 @@ class Replay(object):
         true if the snapshot has recognized the function, false else.'''
 
         # Retrieve miasm tools
-        jitter = self.machine.jitter("python")
+        jitter = self.machine.jitter(config.miasm_engine)
 
         vm_load_elf(jitter.vm, open(self.filename, "rb").read())
 
