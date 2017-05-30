@@ -29,6 +29,8 @@ before_script:
 - "git clone https://github.com/unicorn-engine/unicorn && cd unicorn && make && make -C bindings/python && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd) && cd ..;"
 - "cd unicorn/bindings/python && python setup.py install && cd ../../../;"
 - "python -c 'import unicorn'"
+# install pycparser
+- "pip install pycparser"
 # install Sibyl
 - "cd Sibyl && python setup.py install && cd ..;"
 # get tests
