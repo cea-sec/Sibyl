@@ -250,13 +250,15 @@ Testsets to use:
         return name
 
     IDAABI2SibylABI = {
-        "x86_64": "ABI_AMD64",
         "arml": "ABI_ARM",
         "mips32l": "ABI_MIPS_O32",
         "x86_32": {
             "__cdecl": "ABIStdCall_x86_32",
             "__stdcall": "ABIStdCall_x86_32",
             "__fastcall": "ABIFastCall_x86_32",
+        },
+        "x86_64": {
+            "__fastcall": "ABI_AMD64_SYSTEMV",
         },
     }
 
