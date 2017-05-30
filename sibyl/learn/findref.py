@@ -310,7 +310,7 @@ class ExtractRef(object):
         true if the snapshot has recognized the function, false else.'''
 
         # TODO inherit from Replay
-        jitter = self.machine.jitter("llvm")
+        jitter = self.machine.jitter("python")
 
         vm_load_elf(jitter.vm, open(self.filename, "rb").read())
 

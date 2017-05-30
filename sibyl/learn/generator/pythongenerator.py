@@ -422,10 +422,9 @@ class PythonGenerator(Generator):
         self.printer.add_block("return all((\n")
         self.printer.add_lvl()
 
-        if self.prototype.func_type.name != "void":
-            if objc_is_dereferenceable(self.prototype.func_type):
-                raise RuntimeError("Pointer type as return type are not implemented (%s)" % self.prototype.func_type)
-
+        if objc_is_dereferenceable(self.prototype.func_type):
+            raise RuntimeError("Pointer type as return type are not implemented (%s)" % self.prototype.func_type)
+        elif self.prototype.func_type.name != "void":
             # TODO: use abicls
             retvalue = snapshot.output_reg["RAX"]
             self.printer.add_block("# Check output value\nself._get_result() == %s,\n" % hex(retvalue))

@@ -59,7 +59,6 @@ class TracerMiasm(Tracer):
 
         self.isTracing = False
         self.trace = None
-        self.segments = []
 
     def read_callback(self, symb_exec, expr_mem):
         '''Read callback that add the read event to the snapshot'''
@@ -91,7 +90,7 @@ class TracerMiasm(Tracer):
 
         self.isTracing = True
 
-        self.current_snapshot = Snapshot(self.segments, self.abicls, self.machine)
+        self.current_snapshot = Snapshot(self.abicls, self.machine)
 
         # Add the breakpoint to watch every memory read and write
         jitter.jit.symbexec.add_read_call(self.read_callback)
@@ -181,9 +180,6 @@ class TracerMiasm(Tracer):
             jitter.init_run(elf.Ehdr.entry)
         else:
             jitter.init_run(self.main_address)
-
-        for addr, info in jitter.vm.get_all_memory().iteritems():
-            self.segments += [(addr, addr + info['size'])]
 
         jitter.continue_run()
         assert jitter.run == False
