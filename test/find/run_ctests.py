@@ -153,3 +153,4 @@ def test_find(args):
 
     log_info( "Remove old files" )
     os.system("make clean")
+    return False

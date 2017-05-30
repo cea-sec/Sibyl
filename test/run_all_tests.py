@@ -16,6 +16,8 @@ parser.add_argument("-f", "--func-heuristic", action="store_true",
                     help="Enable function addresses detection heuristics")
 parser.add_argument("-a", "--arch-heuristic", action="store_true",
                     help="Enable architecture detection heuristics")
+parser.add_argument("-p", "--pin-tracer", action="store_true",
+                    help="Enable PIN tracer")
 args = parser.parse_args()
 
 def run_test(test_func, args):
@@ -25,8 +27,12 @@ def run_test(test_func, args):
     previous_cwd = os.getcwd()
 
     os.chdir(os.path.join(previous_cwd, module_path))
-    test_func(args)
+    ret = test_func(args)
     os.chdir(previous_cwd)
+    return ret
 
+fail = False
 for test in AVAILABLE_TEST:
-    run_test(test, args)
+    fail |= run_test(test, args)
+
+assert fail is False
