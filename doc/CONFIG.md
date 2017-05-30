@@ -28,7 +28,7 @@ The default configuration is equivalent to:
 
 ```Python
 [find]
-jit_engine = qemu,gcc,llvm,tcc,python
+jit_engine = qemu,miasm
 
 [tests]
 ctype = $SIBYL/test/ctype.py
@@ -46,6 +46,7 @@ This section is relative to the `find` action.
 The `jit_engine` parameter is a list, separated by ',', of jitter engine
 preference.
 If the first engine is not available, then the second is used, and so on.
+The keyword `miasm` can be used to stand for the Miasm elected engine.
 
 To known the jitter engine elected, use `sibyl config -V jit_engine`.
 

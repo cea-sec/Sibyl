@@ -19,7 +19,7 @@ import os
 import ConfigParser
 
 default_config = {
-    "jit_engine": ["qemu", "gcc", "llvm", "tcc", "python"],
+    "jit_engine": ["qemu", "miasm"],
     "miasm_engine": ["gcc", "llvm", "tcc", "python"],
     "tests": {"string": "$SIBYL/test/string.py",
               "stdlib": "$SIBYL/test/stdlib.py",
@@ -118,10 +118,10 @@ class Config(object):
                     import unicorn
                 except ImportError:
                     continue
-            elif engine == "llvm":
+            elif engine == "miasm":
                 try:
-                    import llvmlite
-                except ImportError:
+                    engine = self.miasm_engine
+                except RuntimeError:
                     continue
             break
         else:
