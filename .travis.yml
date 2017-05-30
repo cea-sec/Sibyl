@@ -41,9 +41,7 @@ before_script:
 script:
 # Sibyl regression tests
 - "cd $SIBYL/test && python run_all_tests.py;"
-# Sibyl 'find' bigger test
+# Sibyl bigger test
 - "cd $SIBYLTEST && ./run.sh;"
-# Sibyl 'learn' bigger test
-- "cd $SIBYLTEST/learned_binaries && python run_learn_tests.py"
 # Sibyl regression tests with heuristics, may not end in reasonnable time
 - "cd $SIBYL/test && python run_all_tests.py -f -a;"
