@@ -8,23 +8,19 @@ class Generator(object):
     Here a test is a sibyl test init function and a sibyl test check function
     '''
 
-    def __init__(self, trace, functionname, nb_arg, learnexceptiontext, abicls, machine):
+    def __init__(self, testcreator):
         '''
-        @snapshot: snapshot used to create the test
-        @number: index used to distinguish init and check functions' names between two snapshots
-        @nb_arg: number of argument of the learned function
-        @abicls: ABI of the program used during the learning
-        @machine: machine of the program used during the learning
+        @testcreator: TestCreator instance with associated information
         '''
-        self.trace = trace
-        self.functionname = functionname
-        self.nb_arg = nb_arg
-        self.learnexceptiontext = learnexceptiontext
-        self.abicls = abicls
+        self.trace = testcreator.trace
+        self.prototype = testcreator.prototype
+        self.learnexceptiontext = testcreator.learnexceptiontext
+        self.types = testcreator.types
         self.printer = Printer()
-
-        self.ira = Machine(machine).ira()
+        self.headerfile = testcreator.headerfile
+        self.ira = Machine(testcreator.machine).ira()
         self.ptr_size = self.ira.sizeof_pointer()/8
+        self.logger = testcreator.logger
 
     def generate_test(self):
         '''Abstract method that should return the string corresponding to the code of the init test'''
@@ -58,6 +54,9 @@ class Printer(object):
 
     def add_block(self, block):
         self._print += (self._whitespace + block).replace('\n', '\n'+self._whitespace).rstrip(' ')
+
+    def add_empty_line(self):
+        self._print += '\n'
 
     def add_lower_block(self, block, n=1):
         self.sub_lvl(n)

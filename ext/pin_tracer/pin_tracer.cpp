@@ -92,38 +92,6 @@ VOID RecordMemWriteAddr(VOID * ip, VOID * addr, UINT32 size)
 }
 
 VOID DumpRegsI(VOID * ip, ADDRINT rax, ADDRINT rbx, ADDRINT rcx, ADDRINT rdx, ADDRINT rsi, ADDRINT rdi, ADDRINT rbp, ADDRINT rsp, ADDRINT r8, ADDRINT r9, ADDRINT r10, ADDRINT r11, ADDRINT r12, ADDRINT r13, ADDRINT r14, ADDRINT r15) {
-	static int first=1;
-
-	/* If this is the first execution of an instruction, /proc/maps of the process is dumped */
-	if(first){
-		FILE* file;
-		pid_t pid = getpid();
-		char map_filename[32];
-		char * line = NULL;
-		size_t len = 0;
-
-		first = 0;
-
-		check_snprintf_error(snprintf(map_filename, 32, "/proc/%u/maps", pid));
-		file = fopen(map_filename, "r");
-		if(file != NULL) {
-
-			while (getline(&line, &len, file) != -1) {
-				check_fprintf_error(fprintf(trace, "%s", line));
-			}
-
-			fclose(file);
-			if( line )
-				free(line);
-
-			check_fprintf_error(fprintf(trace, "\n"));
-		}
-		else {
-			perror("fopen");
-			abort();
-		}
-	}
-
 	/* If the function is not already begun and IP is at its first instruction,
 	   we log input registers */
 	if( !instrument && (uint64_t)ip == functionAddr ) {
@@ -132,6 +100,19 @@ VOID DumpRegsI(VOID * ip, ADDRINT rax, ADDRINT rbx, ADDRINT rcx, ADDRINT rdx, AD
 		rspInit = rsp;
 	}
 }
+
+VOID DumpCall(VOID* ip, ADDRINT rsp) {
+	/* If the function was running*/
+	if( instrument )
+		fprintf(trace, "CALL %p %p\n", ip, (void*) rsp);
+}
+
+VOID DumpRet(VOID* ip, ADDRINT rsp, ADDRINT rax) {
+	/* If the function was running*/
+	if( instrument )
+		fprintf(trace, "RET %p %lx %lx\n", ip, rsp, rax);
+}
+
 
 VOID DumpRegsO(VOID * ip, ADDRINT rax, ADDRINT rbx, ADDRINT rcx, ADDRINT rdx, ADDRINT rsi, ADDRINT rdi, ADDRINT rbp, ADDRINT rsp, ADDRINT r8, ADDRINT r9, ADDRINT r10, ADDRINT r11, ADDRINT r12, ADDRINT r13, ADDRINT r14, ADDRINT r15) {
 	/* If the function was running*/
@@ -144,6 +125,7 @@ VOID DumpRegsO(VOID * ip, ADDRINT rax, ADDRINT rbx, ADDRINT rcx, ADDRINT rdx, AD
 			/* Log output registers */
 			instrument = 0;
 			check_fprintf_error(fprintf(trace,"O %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx\n", rax, rbx, rcx, rdx, rsi, rdi, rbp, rsp, r8, r9, r10, r11, r12, r13, r14, r15));
+			exit(0);
 		}
 	}
 }
@@ -197,6 +179,24 @@ VOID Instruction(INS ins, VOID *v)
 				   IARG_END);
 
 
+	if (INS_IsCall(ins)) {
+		// We cannot use INS_DirectBranchOrCallTargetAddress -> CALL RAX
+		INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)DumpCall,
+			       IARG_INST_PTR,
+			       IARG_REG_VALUE, REG_RSP,
+			       IARG_END);
+
+	}
+
+	if (INS_IsRet(ins)) {
+		INS_InsertCall(ins, IPOINT_TAKEN_BRANCH, (AFUNPTR)DumpRet,
+			       IARG_INST_PTR,
+			       IARG_REG_VALUE, REG_RSP,
+			       IARG_REG_VALUE, REG_RAX,
+			       IARG_END);
+
+	}
+
 	/* Iterate over each memory operand of the instruction */
 	UINT32 memOperands = INS_MemoryOperandCount(ins);
 	for (UINT32 memOp = 0; memOp < memOperands; memOp++) {
@@ -229,6 +229,16 @@ VOID Instruction(INS ins, VOID *v)
 	}
 }
 
+void InstImage(IMG img, void *v)
+{
+	fprintf(trace,"IMG %s\n", IMG_Name(img).c_str());
+
+	for (SYM sym = IMG_RegsymHead(img); SYM_Valid(sym); sym = SYM_Next(sym)) {
+		fprintf(trace,"S %p %s\n", (void *) SYM_Address(sym),
+			SYM_Name(sym).c_str());
+	}
+}
+
 VOID Fini(INT32 code, VOID *v)
 {
 	fclose(trace);
@@ -255,6 +265,9 @@ int main(int argc, char *argv[])
 
 	INS_AddInstrumentFunction(Instruction, 0);
 	PIN_AddFiniFunction(Fini, 0);
+
+	PIN_InitSymbols();
+	IMG_AddInstrumentFunction(InstImage, 0);
 
 	PIN_StartProgram();
 

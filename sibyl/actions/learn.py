@@ -19,7 +19,9 @@ class ActionLearn(Action):
         # Mandatory
         (["functionname"], {"help": "Name of the learned function"}),
         (["program"], {"help": "Program used to learn the function, currently" \
-                       "only x86 64 programs are supported"}),
+                       " only x86 64 programs are supported"}),
+        (["headerfile"], {"help": ".h header containing function declaration" \
+                          " and associated types"}),
         # Optional
         (["-a", "--address"], {"help": "Address of the learned function. If " \
                                "not set, the corresponding symbol address is used."}),
@@ -31,8 +33,10 @@ class ActionLearn(Action):
                                  ", ".join(AVAILABLE_GENERATOR.keys()),
                                  "default": "python",
                                  "choices": AVAILABLE_GENERATOR.keys()}),
-        (["-v", "--verbose"], {"help": "Verbose mode",
-                               "action": "store_true"}),
+        (["-v", "--verbose"], {"help": "Verbose mode (use multiple time to " \
+                               "increase verbosity level)",
+                               "action": "count",
+                               "default": 0}),
         (["-m", "--main"], {"help": "Address of the function that calls the" \
                             "learned function. Use by and only by the miasm tracer."}),
         (["-o", "--output"], {"help": "Output file. Class is printed to stdout" \
@@ -62,14 +66,19 @@ class ActionLearn(Action):
         else:
             address = int(self.args.address, 0)
 
+
         testcreator = TestCreator(self.args.functionname, address,
-                                  self.args.program,
+                                  self.args.program, self.args.headerfile,
                                   AVAILABLE_TRACER[self.args.trace],
                                   AVAILABLE_GENERATOR[self.args.generator],
                                   main, abi, machine)
 
-        if self.args.verbose:
+        if self.args.verbose == 0:
+            testcreator.logger.setLevel(logging.WARN)
+        if self.args.verbose == 1:
             testcreator.logger.setLevel(logging.INFO)
+        elif self.args.verbose == 2:
+            testcreator.logger.setLevel(logging.DEBUG)
 
         createdTest = testcreator.create_test()
 

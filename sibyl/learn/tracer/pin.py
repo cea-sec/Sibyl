@@ -29,7 +29,8 @@ class TracerPin(Tracer):
 
         pin_root = os.environ.get("PIN_ROOT", "")
 
-        cmd = [os.path.join(pin_root, "pin"), "-ifeellucky", "-t", os.path.dirname(sibyl.__path__[0]) + "/ext/pin_tracer/pin_tracer.so", "-a", "0x%x" % self.address, "-o", tmpName, "--", "./" + self.program]
+        # TODO -> config
+        cmd = [os.path.join(pin_root, "pin"), "-ifeellucky", "-t", os.path.dirname(sibyl.__path__[0]) + "/ext/pin_tracer/pin_tracer.so", "-a", "0x%x" % self.address, "-o", tmpName, "--", self.program]
         self._run_cmd(cmd)
 
         return tmpName
@@ -37,57 +38,68 @@ class TracerPin(Tracer):
     def __parse_pin_output_file(self, traceFile):
         '''Parse the file created by the pintool in order to construct the trace'''
 
-        # Read the begin of file until the first blank line
-        # This correspond to the segment enumeration
-        segments = []
-        for line in traceFile:
-            if line == "\n":
-                break
-
-            # Each line begins with the bound of the segment,
-            # separated by a '-' and followed by a white space
-            segments += [tuple([int(addr, 16)
-                               for addr in line.split(' ')[0].split('-')])]
-
         trace = Trace()
+
+        # Statefull elements
         started = False
+        current_image_name = None
+
+        # State machine for parsing
         for line in traceFile:
             infos = line.strip().split(' ')
-            first_char = infos[0]
+            entry_type = infos[0]
+
+
+            # Image loaded in memory
+            # IMG <img_name>
+            if entry_type == "IMG":
+                img_name = infos[1]
+                current_image_name = img_name
+                continue
+
+            # Symbol entry
+            # S <symbol_addr> <symbol_name>
+            elif entry_type == 'S':
+                assert current_image_name is not None
+                symbol_name = infos[2]
+                symbol_addr = int(infos[1], 16)
+                trace.add_symbol(current_image_name, symbol_name, symbol_addr)
+                continue
+
             values = [int(v, 16) for v in infos[1:]]
 
             # Start of the learned function
             # Fields are registers value
-            if first_char == 'I':
+            if entry_type == 'I':
                 if not started:
                     started = True
-                    current_snapshot = Snapshot(segments, self.abicls, self.machine)
+                    current_snapshot = Snapshot(self.abicls, self.machine)
 
                 for i, reg_name in enumerate(self.reg_list):
                     current_snapshot.add_input_register(reg_name, values[i])
 
             # Executed instructions address
-            elif first_char == '@':
+            elif entry_type == '@':
                 if started:
                     current_snapshot.add_executed_instruction(values[0])
 
             # Memory read access
             # Fields are read address, read size and read value
-            elif first_char == 'R':
+            elif entry_type == 'R':
                 if started:
                     current_snapshot.add_memory_read(
                         values[0], values[1], values[2])
 
             # Memory write access
             # Fields are writen address, writen size and writen value
-            elif first_char == 'W':
+            elif entry_type == 'W':
                 if started:
                     current_snapshot.add_memory_write(
                         values[0], values[1], values[2])
 
             # End of the learned function
             # Field are register value
-            elif first_char == 'O':
+            elif entry_type == 'O':
                 if started:
                     for i, reg_name in enumerate(self.reg_list):
                         current_snapshot.add_output_register(
@@ -97,5 +109,18 @@ class TracerPin(Tracer):
                     # Snapshot can be added to the trace
                     started = False
                     trace.append(current_snapshot)
+                    if len(trace) > 4:
+                        print "STOP"
+                        break
+
+            # Call to a function
+            # CALL <caller_addr> <stack pointer>
+            elif entry_type == "CALL":
+                current_snapshot.add_call(values[0], values[1])
+
+            # Return from a function
+            # RET <ret_addr> <stack pointer after> <ret value>
+            elif entry_type == "RET":
+                current_snapshot.add_ret(values[0], values[1], values[2])
 
         return trace
