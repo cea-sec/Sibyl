@@ -17,6 +17,7 @@ unsupported = [
     "my_strcpy",
     "doublePtr",
     "numerous_arguments",
+    "deref_struct",
 ]
 
 def invoke_pin(filename, func_name, header_filename, cont):
