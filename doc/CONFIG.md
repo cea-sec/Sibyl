@@ -46,7 +46,7 @@ If the first engine is not available, then the second is used, and so on.
 
 To known the jitter engine elected, use `sibyl config -V jit_engine`.
 
-### Section 'test'
+### Section 'tests'
 
 This section links to available test sets. By default, only Sibyl ones are
 present.
