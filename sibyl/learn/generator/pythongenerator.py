@@ -274,7 +274,6 @@ class PythonGenerator(Generator):
                 # Expr.replace_expr is postfix, enumerate possibilities
                 if isinstance(addr_expr, ExprId):
                     assert addr_expr in fixed
-                    relative_addr = fixed[addr_expr]
                     base = addr_expr
                     offset = 0
                 elif isinstance(addr_expr, ExprOp):
@@ -283,7 +282,6 @@ class PythonGenerator(Generator):
                                 len(addr_expr.args) == 2,
                                 isinstance(addr_expr.args[1], ExprInt),
                                 addr_expr.args[0] in fixed))
-                    relative_addr = fixed[addr_expr.args[0]] + addr_expr.args[1]
                     base = addr_expr.args[0]
                     offset = int(addr_expr.args[1])
                 else:
@@ -313,7 +311,6 @@ class PythonGenerator(Generator):
                         "addr": addr_expr,
                         "ptr": ptr,
                         "base": base,
-                        "relative_addr": relative_addr,
                 }
                 ptr_to_info[ptr] = info
 
