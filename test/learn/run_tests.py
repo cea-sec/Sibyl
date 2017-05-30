@@ -15,7 +15,6 @@ from sibyl.config import config
 # Tests to fix
 unsupported = [
     "my_strcpy",
-    "doublePtr",
     "numerous_arguments",
     "deref_struct",
 ]

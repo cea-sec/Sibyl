@@ -272,22 +272,21 @@ class PythonGenerator(Generator):
                 addr_expr = expr.arg
 
                 # Expr.replace_expr is postfix, enumerate possibilities
-                if isinstance(addr_expr, ExprId):
+                if addr_expr.is_id() or addr_expr.is_mem():
                     assert addr_expr in fixed
-                    relative_addr = fixed[addr_expr]
                     base = addr_expr
                     offset = 0
-                elif isinstance(addr_expr, ExprOp):
+                elif addr_expr.is_op():
                     # X + offset
                     assert all((addr_expr.op == "+",
                                 len(addr_expr.args) == 2,
                                 isinstance(addr_expr.args[1], ExprInt),
                                 addr_expr.args[0] in fixed))
-                    relative_addr = fixed[addr_expr.args[0]] + addr_expr.args[1]
                     base = addr_expr.args[0]
                     offset = int(addr_expr.args[1])
                 else:
-                    raise ValueError("Memory access should be in X, X + offset")
+                    raise ValueError("Memory access should be in " \
+                                     "X, X + offset, @[X]")
 
                 if addr_expr in fixed:
                     # Already handled
@@ -313,7 +312,6 @@ class PythonGenerator(Generator):
                         "addr": addr_expr,
                         "ptr": ptr,
                         "base": base,
-                        "relative_addr": relative_addr,
                 }
                 ptr_to_info[ptr] = info
 
@@ -341,7 +339,7 @@ class PythonGenerator(Generator):
             self.printer.add_block("# %s\n" % info["Clike"])
             self.printer.add_block('%s = %s + self.field_addr("%s", "%s")\n' % (ptr,
                                                                            fixed[base],
-                                                                           base,
+                                                                           bases_to_C[base],
                                                                            info["Clike"])
                                    )
 
