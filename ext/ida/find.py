@@ -104,7 +104,7 @@ def launch_on_funcs(architecture, abi, funcs, test_set, map_addr=None,
     print "Launch identification on %d function(s)" % nb_func
     options = ["-a", architecture, "-b", abi, "-o", "JSON"]
     for test_name in test_set:
-        options = ["-t", test_name]
+        options += ["-t", test_name]
     if jitter is not None:
         options += ["-j", jitter]
     options += add_map
@@ -250,13 +250,15 @@ Testsets to use:
         return name
 
     IDAABI2SibylABI = {
-        "x86_64": "ABI_AMD64",
         "arml": "ABI_ARM",
         "mips32l": "ABI_MIPS_O32",
         "x86_32": {
             "__cdecl": "ABIStdCall_x86_32",
             "__stdcall": "ABIStdCall_x86_32",
             "__fastcall": "ABIFastCall_x86_32",
+        },
+        "x86_64": {
+            "__fastcall": "ABI_AMD64_SYSTEMV",
         },
     }
 
@@ -296,8 +298,6 @@ Testsets to use:
     def tests(self):
         """Return the list of test to launch"""
         bitfield = self.cTest.value
-        if bitfield == (1 << len(AVAILABLE_TESTS)) - 1:
-            return ["all"]
         tests = []
         for i, test in enumerate(AVAILABLE_TESTS):
             if bitfield & (1 << i):
