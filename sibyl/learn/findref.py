@@ -283,12 +283,18 @@ class ExtractRef(object):
         memory_in = {}
         memory_out = {}
 
+        # Get the resulting symbolic value
+        # TODO use abi
+        output_value = self.symb.symbols[self.symb.ir_arch.arch.regs.RAX]
+
+        # Fill memory *out* (written)
         for expr in self.memories_write:
             # Eval the expression with the *output* state
             value = self.symb.eval_expr(expr)
             assert isinstance(value, m2_expr.ExprInt)
             memory_out[expr] = value
 
+        # Fill memory *in* (read)
         saved_symbols = self.symb.symbols
         self.symb.symbols = self.symbols_init
         for expr in self.memories_read:
@@ -304,8 +310,12 @@ class ExtractRef(object):
             print memory_in
             print "Out:"
             print memory_out
+            print "Final value:"
+            print output_value
+
         self.snapshot.memory_in = AssignBlock(memory_in)
         self.snapshot.memory_out = AssignBlock(memory_out)
+        self.snapshot.output_value = output_value
         self.snapshot.c_handler = self.c_handler
         self.snapshot.arguments_symbols = self.args_symbols
 

@@ -233,6 +233,7 @@ class PythonGenerator(Generator):
         memory_out = snapshot.memory_out
         c_handler = snapshot.c_handler
         arguments_symbols = snapshot.arguments_symbols
+        output_value = snapshot.output_value
 
         # Sanitize memory accesses
         memory_in, _ = self.sanitize_memory_accesses(memory_in, c_handler)
@@ -389,14 +390,37 @@ class PythonGenerator(Generator):
                                                                                            value,
                                                                                            info_C[0]))
 
-        # Needed for check generation
-        self.printer.add_empty_line()
-        self.fixed = fixed
-        for dst in memory_out:
-            assert dst.arg in fixed
-            self.printer.add_block('self.%s = %s\n' % (fixed[dst.arg],
-                                                       fixed[dst.arg]))
+        ## Returned value
+        base = None
+        if objc_is_dereferenceable(self.prototype.func_type):
 
+            if output_value.is_id() or output_value.is_mem():
+                assert output_value in fixed
+                base = output_value
+            elif output_value.is_op():
+                # X + offset
+                assert all((output_value.op == "+",
+                            len(output_value.args) == 2,
+                            isinstance(output_value.args[1], ExprInt),
+                            output_value.args[0] in fixed))
+                base = output_value.args[0]
+            else:
+                raise ValueError("Output should be in X, X + offset, @[X] form")
+
+        # Needed for check generation
+        ## For generate_check needs
+        self.fixed = fixed
+        self.bases_to_C = bases_to_C
+
+        ## For the generated check needs
+        to_save = set()
+        to_save.update(fixed[dst.arg] for dst in memory_out)
+        if base is not None:
+            to_save.add(fixed[base])
+
+        self.printer.add_empty_line()
+        for var in to_save:
+            self.printer.add_block('self.%s = %s\n' % (var, var))
         self.printer.sub_lvl()
 
 
@@ -409,21 +433,48 @@ class PythonGenerator(Generator):
         memory_out = snapshot.memory_out
         c_handler = snapshot.c_handler
         arguments_symbols = snapshot.arguments_symbols
+        output_value = snapshot.output_value
 
         # Sanitize memory accesses
         memory_out, filled_out = self.sanitize_memory_accesses(memory_out,
                                                                c_handler)
 
         fixed = self.fixed
+        bases_to_C = self.bases_to_C
 
         self.printer.add_block("return all((\n")
         self.printer.add_lvl()
 
         if objc_is_dereferenceable(self.prototype.func_type):
-            raise RuntimeError("Pointer type as return type are not implemented (%s)" % self.prototype.func_type)
+
+            if output_value.is_id() or output_value.is_mem():
+                assert output_value in fixed
+                base = output_value
+            elif output_value.is_op():
+                # X + offset
+                assert all((output_value.op == "+",
+                            len(output_value.args) == 2,
+                            isinstance(output_value.args[1], ExprInt),
+                            output_value.args[0] in fixed))
+                base = output_value.args[0]
+            else:
+                raise ValueError("Output should be in X, X + offset, @[X] form")
+
+            info_C = c_handler.expr_to_c(output_value)
+            assert len(info_C) == 1
+            Clike = info_C[0]
+
+            suffix = ""
+            if bases_to_C[base] != Clike:
+                # Only consider necessary calls to field_addr
+                suffix = ' + self.field_addr("%s", "%s", is_ptr=True)' % (bases_to_C[base],
+                                                                          Clike)
+            self.printer.add_block("# Check output value\n# result == %s\n" % Clike)
+            self.printer.add_block('self._get_result() == self.%s%s,\n' % (fixed[base],
+                                                                           suffix))
+
         elif self.prototype.func_type.name != "void":
-            # TODO: use abicls
-            retvalue = snapshot.output_reg["RAX"]
+            retvalue = int(output_value)
             self.printer.add_block("# Check output value\nself._get_result() == %s,\n" % hex(retvalue))
 
         for dst in memory_out:
