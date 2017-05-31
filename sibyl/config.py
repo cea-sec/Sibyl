@@ -26,6 +26,7 @@ default_config = {
               "ctype": "$SIBYL/test/ctype.py",
     },
     "pin_root": os.environ.get("PIN_ROOT", ""),
+    "pin_tracer": "",
 }
 
 config_paths = [os.path.join(path, 'sibyl.conf')
@@ -89,6 +90,11 @@ class Config(object):
             # root = /path
             if cparser.has_option("pin", "root"):
                 self.config["pin_root"] = cparser.get("pin", "root")
+            # tracer = /path/to/lib.so
+            if cparser.has_option("pin", "tracer"):
+                self.config["pin_tracer"] = cparser.get("pin", "tracer")
+
+
 
     def dump(self):
         """Dump the current configuration as a config file"""
@@ -193,6 +199,13 @@ class Config(object):
     def pin_root(self):
         """Base path of Intel PIN install"""
         return self.config["pin_root"]
+
+    @property
+    def pin_tracer(self):
+        """PIN-tool to use for tracing
+        It should be the compiled version of ext/pin_tracer/pin_tracer.cpp
+        """
+        return self.config["pin_tracer"]
 
 
 config = Config(default_config, config_paths)

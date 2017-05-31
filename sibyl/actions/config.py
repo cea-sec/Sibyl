@@ -69,6 +69,11 @@ class ActionConfig(Action):
             print "PIN root path found at: %s" % config.pin_root
         else:
             print "PIN root path not found"
+        if (config.pin_tracer and
+            os.path.exists(config.pin_tracer)):
+            print "PIN tracer found at: %s" % config.pin_tracer
+        else:
+            print "PIN tracer not found"
 
         # Tests
         print "Tests availables:"
