@@ -114,7 +114,6 @@ class PythonGenerator(Generator):
     def generate_test(self):
         self.printer.add_block(TPL.imports)
         self.printer.add_empty_line()
-        self.printer.add_block(TPL.testHeaderCls)
 
         self.printer.add_block(TPL.classDef.format(funcname=self.prototype.func_name))
         self.printer.add_empty_line()
