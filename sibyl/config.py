@@ -25,8 +25,8 @@ default_config = {
               "stdlib": "$SIBYL/test/stdlib.py",
               "ctype": "$SIBYL/test/ctype.py",
     },
-    "pin_root": os.environ.get("PIN_ROOT", ""),
-    "pin_tracer": "",
+    "pin_root": "$PIN_ROOT",
+    "pin_tracer": "$SIBYL/ext/pin_tracer/pin_tracer.so",
 }
 
 config_paths = [os.path.join(path, 'sibyl.conf')
@@ -53,6 +53,22 @@ class Config(object):
         self._jit_engine = None
         self._miasm_engine = None
         self._available_tests = None
+
+    @staticmethod
+    def expandpath(path):
+        """Expand @path with following rules:
+        - $SIBYL is replaced by the installation path of Sibyl
+        - path are expanded ('~' -> '/home/user', ...)
+        """
+        if "$SIBYL" in path:
+            import sibyl
+            sibyl_base = sibyl.__path__[0]
+            path = path.replace("$SIBYL", sibyl_base)
+
+        path = os.path.expandvars(path)
+        path = os.path.expanduser(path)
+
+        return path
 
     def parse_files(self, files):
         """Load configuration from @files (which could not exist)"""
@@ -119,6 +135,7 @@ class Config(object):
         out.append("")
         out.append("[pin]")
         out.append("root = %s" % self.config["pin_root"])
+        out.append("tracer = %s" % self.config["pin_tracer"])
 
         return out
 
@@ -157,14 +174,10 @@ class Config(object):
         if self._available_tests is not None:
             return self._available_tests
 
-        available_tests = {}
         # Fetch tests from files
-        import sibyl
-        sibyl_base = sibyl.__path__[0]
-
+        available_tests = {}
         for name, fpath in self.config["tests"].iteritems():
-            # Keyword
-            fpath = fpath.replace("$SIBYL", sibyl_base)
+            fpath = self.expandpath(fpath)
 
             # Get TESTS
             context = {}
@@ -198,14 +211,15 @@ class Config(object):
     @property
     def pin_root(self):
         """Base path of Intel PIN install"""
-        return self.config["pin_root"]
+        path = self.expandpath(self.config["pin_root"])
+        return path if path != "$PIN_ROOT" else ""
 
     @property
     def pin_tracer(self):
         """PIN-tool to use for tracing
         It should be the compiled version of ext/pin_tracer/pin_tracer.cpp
         """
-        return self.config["pin_tracer"]
+        return self.expandpath(self.config["pin_tracer"])
 
 
 config = Config(default_config, config_paths)
