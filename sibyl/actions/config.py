@@ -56,7 +56,11 @@ class ActionConfig(Action):
             print "Configuration loaded from %s" % ", ".join(files)
 
         # Jitter engine
-        print "Jitter engine (preference order): %s" % ", ".join(config.config["jit_engine"])
+        engines = config.config["jit_engine"]
+        if "miasm" in engines:
+            idx = engines.index("miasm")
+            engines[idx:idx + 1] = config.config["miasm_engine"]
+        print "Jitter engine (preference order): %s" % ", ".join(engines)
         print "Elected jitter engine: %s" % config.jit_engine
 
         # Tests

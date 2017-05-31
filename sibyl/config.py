@@ -19,7 +19,8 @@ import os
 import ConfigParser
 
 default_config = {
-    "jit_engine": ["qemu", "gcc", "llvm", "tcc", "python"],
+    "jit_engine": ["qemu", "miasm"],
+    "miasm_engine": ["gcc", "llvm", "tcc", "python"],
     "tests": {"string": "$SIBYL/test/string.py",
               "stdlib": "$SIBYL/test/stdlib.py",
               "ctype": "$SIBYL/test/ctype.py",
@@ -48,6 +49,7 @@ class Config(object):
 
         # Init caches
         self._jit_engine = None
+        self._miasm_engine = None
         self._available_tests = None
 
     def parse_files(self, files):
@@ -71,6 +73,15 @@ class Config(object):
             for name in cparser.options("tests"):
                 self.config["tests"][name] = cparser.get("tests", name)
 
+        # Miasm
+        #
+        # [miasm]
+        if cparser.has_section("miasm"):
+            # jit_engine = llvm,gcc
+            if cparser.has_option("miasm", "jit_engine"):
+                self.config["miasm_engine"] = cparser.get("miasm", "jit_engine").split(",")
+
+
     def dump(self):
         """Dump the current configuration as a config file"""
         out = []
@@ -84,6 +95,11 @@ class Config(object):
         out.append("[tests]")
         for name, path in self.config["tests"].iteritems():
             out.append("%s = %s" % (name, path))
+
+        # Miasm
+        out.append("")
+        out.append("[miasm]")
+        out.append("jit_engine = %s" % ",".join(self.config["miasm_engine"]))
 
         return out
 
@@ -102,14 +118,14 @@ class Config(object):
                     import unicorn
                 except ImportError:
                     continue
-            elif engine == "llvm":
+            elif engine == "miasm":
                 try:
-                    import llvmlite
-                except ImportError:
+                    engine = self.miasm_engine
+                except RuntimeError:
                     continue
             break
         else:
-            raise RuntimeError("Cannot found a support jitter")
+            raise RuntimeError("Cannot found a supported jitter")
 
         self._jit_engine = engine
         return engine
@@ -139,6 +155,26 @@ class Config(object):
         self._available_tests = available_tests
         return self._available_tests
 
+    @property
+    def miasm_engine(self):
+        """Name of engine to use for Miasm relative tasks"""
+        # Cache
+        if self._miasm_engine is not None:
+            return self._miasm_engine
+
+        # Try to resolve jitter by preference order
+        for engine in self.config["miasm_engine"]:
+            if engine == "llvm":
+                try:
+                    import llvmlite
+                except ImportError:
+                    continue
+            break
+        else:
+            raise RuntimeError("Cannot found a support jitter")
+
+        self._miasm_engine = engine
+        return engine
+
 
 config = Config(default_config, config_paths)
-
