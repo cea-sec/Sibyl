@@ -312,6 +312,7 @@ class PythonGenerator(Generator):
                         "addr": addr_expr,
                         "ptr": ptr,
                         "base": base,
+                        "offset": offset,
                 }
                 ptr_to_info[ptr] = info
 
@@ -336,11 +337,19 @@ class PythonGenerator(Generator):
         # Set each pointers
         for ptr, info in sorted(ptr_to_info.iteritems(), key=lambda x:x[0]):
             base = info["base"]
+            suffix = ""
+            if info["offset"] != 0:
+                # Only consider necessary calls to field_addr
+                # (assume the first field of a struct will always be at offset 0)
+                suffix = ' + self.field_addr("%s", "%s")' % (bases_to_C[base],
+                                                             info["Clike"])
+            elif ptr == fixed[base]:
+                # Avoid unnecessary identity affectation
+                continue
             self.printer.add_block("# %s\n" % info["Clike"])
-            self.printer.add_block('%s = %s + self.field_addr("%s", "%s")\n' % (ptr,
-                                                                           fixed[base],
-                                                                           bases_to_C[base],
-                                                                           info["Clike"])
+            self.printer.add_block('%s = %s%s\n' % (ptr,
+                                                    fixed[base],
+                                                    suffix)
                                    )
 
         # Set initial values
