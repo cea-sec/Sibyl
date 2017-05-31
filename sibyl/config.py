@@ -54,6 +54,21 @@ class Config(object):
         self._miasm_engine = None
         self._available_tests = None
 
+    @staticmethod
+    def expandpath(path):
+        """Expand @path with following rules:
+        - $SIBYL is replaced by the installation path of Sibyl
+        - path are expanded ('~' -> '/home/user', ...)
+        """
+        if "$SIBYL" in path:
+            import sibyl
+            sibyl_base = sibyl.__path__[0]
+            path = path.replace("$SIBYL", sibyl_base)
+
+        path = os.path.expanduser(path)
+
+        return path
+
     def parse_files(self, files):
         """Load configuration from @files (which could not exist)"""
         cparser = ConfigParser.SafeConfigParser()
@@ -157,14 +172,10 @@ class Config(object):
         if self._available_tests is not None:
             return self._available_tests
 
-        available_tests = {}
         # Fetch tests from files
-        import sibyl
-        sibyl_base = sibyl.__path__[0]
-
+        available_tests = {}
         for name, fpath in self.config["tests"].iteritems():
-            # Keyword
-            fpath = fpath.replace("$SIBYL", sibyl_base)
+            fpath = self.expandpath(fpath)
 
             # Get TESTS
             context = {}
@@ -198,14 +209,14 @@ class Config(object):
     @property
     def pin_root(self):
         """Base path of Intel PIN install"""
-        return self.config["pin_root"]
+        return self.expandpath(self.config["pin_root"])
 
     @property
     def pin_tracer(self):
         """PIN-tool to use for tracing
         It should be the compiled version of ext/pin_tracer/pin_tracer.cpp
         """
-        return self.config["pin_tracer"]
+        return self.expandpath(self.config["pin_tracer"])
 
 
 config = Config(default_config, config_paths)
