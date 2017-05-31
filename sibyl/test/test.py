@@ -302,10 +302,15 @@ class TestHeader(Test):
         return ret
 
     def field_addr(self, base, Clike, is_ptr=False):
-        base_expr = self.trad(base)
-        if is_ptr:
-            access_expr = self.trad(Clike)
-        else:
-            access_expr = self.trad("&(%s)" % Clike)
-        offset = int(expr_simp(access_expr - base_expr))
-        return offset
+        key = (base, Clike, is_ptr)
+        ret = self.cache_field_addr.get(key, None)
+        if ret is None:
+            base_expr = self.trad(base)
+            if is_ptr:
+                access_expr = self.trad(Clike)
+            else:
+                access_expr = self.trad("&(%s)" % Clike)
+            offset = int(expr_simp(access_expr - base_expr))
+            ret = offset
+            self.cache_field_addr[key] = ret
+        return ret
