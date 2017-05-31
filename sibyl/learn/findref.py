@@ -177,7 +177,7 @@ class ExtractRef(object):
 
         cur_addr = jitter.pc
         self.logger.debug("Current address: %s", hex(cur_addr))
-        if cur_addr == 0x1337BEEF:
+        if cur_addr == 0x1337BEEF or cur_addr == self.return_addr:
             # End reached
             if self.logger.isEnabledFor(logging.DEBUG):
                 print "In:"
@@ -205,7 +205,7 @@ class ExtractRef(object):
 
         return True
 
-    def prepare_symbexec(self, jitter):
+    def prepare_symbexec(self, jitter, return_addr):
         # Activate callback on each instr
         jitter.jit.set_options(max_exec_per_call=1, jit_maxline=1)
         #jitter.jit.log_mn = True
@@ -240,6 +240,9 @@ class ExtractRef(object):
 
         ## Save the initial state
         self.symbols_init = self.symb.symbols.copy()
+
+        ## Save the returning address
+        self.return_addr = return_addr
 
         # Inject argument
         # TODO
@@ -337,7 +340,7 @@ class ExtractRef(object):
 
         # Prepare the execution
         jitter.init_run(self.learned_addr)
-        self.prepare_symbexec(jitter)
+        self.prepare_symbexec(jitter, return_addr)
 
         # Run the execution
         try:
