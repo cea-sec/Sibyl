@@ -37,6 +37,10 @@ stdlib = $SIBYL/test/stdlib.py
 
 [miasm]
 jit_engine = gcc,llvm,tcc,python
+
+[pin]
+root =
+tracer =
 ```
 
 ### Section 'find'
@@ -72,6 +76,19 @@ preference when Miasm is used.
 If the first engine is not available, then the second is used, and so on.
 
 To known the jitter engine elected, use `sibyl config -V miasm_engine`.
+
+### Section 'pin'
+
+This section contains options relative to PIN use.
+
+The `root` parameter is the root path of the Intel Pin installation (the one
+containing the `pin` binary).
+If the environment variable `PIN_ROOT` is set, it will be used instead.
+If `pin` is already in the user's path, this parameter can be ignored.
+
+The `tracer` parameter is the path of the compiled version of the tracer
+`ext/pin_tracer/pin_tracer.cpp`, which will probably looks like
+`/path/to/sibyl/ext/pin_tracer/pin_tracer.so`.
 
 ### Configuration overview
 
