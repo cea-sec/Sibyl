@@ -8,6 +8,7 @@ import os
 import sibyl
 from sibyl.learn.tracer.tracer import Tracer
 from sibyl.learn.trace import Trace, Snapshot
+from sibyl.config import config
 
 
 class TracerPin(Tracer):
@@ -27,10 +28,8 @@ class TracerPin(Tracer):
         tmpName = tmp.name
         tmp.close()
 
-        pin_root = os.environ.get("PIN_ROOT", "")
-
         # TODO -> config
-        cmd = [os.path.join(pin_root, "pin"), "-ifeellucky", "-t", os.path.dirname(sibyl.__path__[0]) + "/ext/pin_tracer/pin_tracer.so", "-a", "0x%x" % self.address, "-o", tmpName, "--", self.program]
+        cmd = [os.path.join(config.pin_root, "pin"), "-ifeellucky", "-t", os.path.dirname(sibyl.__path__[0]) + "/ext/pin_tracer/pin_tracer.so", "-a", "0x%x" % self.address, "-o", tmpName, "--", self.program]
         self._run_cmd(cmd)
 
         return tmpName

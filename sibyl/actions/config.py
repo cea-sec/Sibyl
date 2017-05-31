@@ -63,6 +63,13 @@ class ActionConfig(Action):
         print "Jitter engine (preference order): %s" % ", ".join(engines)
         print "Elected jitter engine: %s" % config.jit_engine
 
+        # PIN
+        if (config.pin_root and
+            os.path.exists(os.path.join(config.pin_root, "pin"))):
+            print "PIN root path found at: %s" % config.pin_root
+        else:
+            print "PIN root path not found"
+
         # Tests
         print "Tests availables:"
         for name, tests in config.available_tests.iteritems():
