@@ -24,7 +24,9 @@ default_config = {
     "tests": {"string": "$SIBYL/test/string.py",
               "stdlib": "$SIBYL/test/stdlib.py",
               "ctype": "$SIBYL/test/ctype.py",
-    }
+    },
+    "pin_root": os.environ.get("PIN_ROOT", ""),
+    "pin_tracer": "",
 }
 
 config_paths = [os.path.join(path, 'sibyl.conf')
@@ -81,6 +83,18 @@ class Config(object):
             if cparser.has_option("miasm", "jit_engine"):
                 self.config["miasm_engine"] = cparser.get("miasm", "jit_engine").split(",")
 
+        # PIN
+        #
+        # [pin]
+        if cparser.has_section("pin"):
+            # root = /path
+            if cparser.has_option("pin", "root"):
+                self.config["pin_root"] = cparser.get("pin", "root")
+            # tracer = /path/to/lib.so
+            if cparser.has_option("pin", "tracer"):
+                self.config["pin_tracer"] = cparser.get("pin", "tracer")
+
+
 
     def dump(self):
         """Dump the current configuration as a config file"""
@@ -100,6 +114,11 @@ class Config(object):
         out.append("")
         out.append("[miasm]")
         out.append("jit_engine = %s" % ",".join(self.config["miasm_engine"]))
+
+        # Pin
+        out.append("")
+        out.append("[pin]")
+        out.append("root = %s" % self.config["pin_root"])
 
         return out
 
@@ -175,6 +194,18 @@ class Config(object):
 
         self._miasm_engine = engine
         return engine
+
+    @property
+    def pin_root(self):
+        """Base path of Intel PIN install"""
+        return self.config["pin_root"]
+
+    @property
+    def pin_tracer(self):
+        """PIN-tool to use for tracing
+        It should be the compiled version of ext/pin_tracer/pin_tracer.cpp
+        """
+        return self.config["pin_tracer"]
 
 
 config = Config(default_config, config_paths)
