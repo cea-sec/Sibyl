@@ -25,7 +25,7 @@ default_config = {
               "stdlib": "$SIBYL/test/stdlib.py",
               "ctype": "$SIBYL/test/ctype.py",
     },
-    "pin_root": os.environ.get("PIN_ROOT", ""),
+    "pin_root": "$PIN_ROOT",
     "pin_tracer": "",
 }
 
@@ -65,6 +65,7 @@ class Config(object):
             sibyl_base = sibyl.__path__[0]
             path = path.replace("$SIBYL", sibyl_base)
 
+        path = os.path.expandvars(path)
         path = os.path.expanduser(path)
 
         return path
@@ -209,7 +210,8 @@ class Config(object):
     @property
     def pin_root(self):
         """Base path of Intel PIN install"""
-        return self.expandpath(self.config["pin_root"])
+        path = self.expandpath(self.config["pin_root"])
+        return path if path != "$PIN_ROOT" else ""
 
     @property
     def pin_tracer(self):
