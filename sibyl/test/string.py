@@ -1002,18 +1002,29 @@ class TestBzero(Test):
     # Test1
     my_string = "Hello \x00, w%srld !, hello world"
     my_len = len(my_string)
-    def init(self):
-        self.my_addr = self._alloc_string(self.my_string, write = True)
+    def init1(self):
+        self.my_addr = self._alloc_string(self.my_string, write=True)
         self._add_arg(0, self.my_addr)
-        self._add_arg(1, len(self.my_string))
+        self._add_arg(1, self.my_len)
 
-    def check(self):
+    def check1(self):
         return self._ensure_mem(self.my_addr, self.my_len * "\x00")
+
+    # Test2
+    my_string2 = my_string * 50
+    my_len2 = len(my_string2)
+    def init2(self):
+        self.my_addr = self._alloc_string(self.my_string2, write=True)
+        self._add_arg(0, self.my_addr)
+        self._add_arg(1, self.my_len2)
+
+    def check2(self):
+        return self._ensure_mem(self.my_addr, self.my_len2 * "\x00")
 
 
     # Properties
     func = "bzero"
-    tests = TestSetTest(init, check)
+    tests = TestSetTest(init1, check1) & TestSetTest(init2, check2)
 
 
 
