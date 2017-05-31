@@ -39,8 +39,8 @@ stdlib = $SIBYL/test/stdlib.py
 jit_engine = gcc,llvm,tcc,python
 
 [pin]
-root =
-tracer =
+root = $PIN_ROOT
+tracer = $SIBYL/ext/pin_tracer/pin_tracer.so
 ```
 
 ### Section 'find'
@@ -60,7 +60,6 @@ This section links to available test sets. By default, only Sibyl ones are
 present.
 
 The syntax is: `name = path/to/file.py`.
-The token `$SIBYL` can be used to point to Sibyl installation dir.
 
 The list of registered tests can be obtain withe
 `sibyl config -V available_tests_keys`.
@@ -83,7 +82,7 @@ This section contains options relative to PIN use.
 
 The `root` parameter is the root path of the Intel Pin installation (the one
 containing the `pin` binary).
-If the environment variable `PIN_ROOT` is set, it will be used instead.
+By default, the environment variable `$PIN_ROOT` is used (if it exists).
 If `pin` is already in the user's path, this parameter can be ignored.
 
 The `tracer` parameter is the path of the compiled version of the tracer
@@ -105,3 +104,11 @@ Sibyl configuration is available from `sibyl.config:config`.
 This `Config` instance provides:
 * `jit_engine`: Name of engine to use for jit
 * `available_tests`: dictionnary mapping test group name to corresponding classes
+
+### Path handling
+
+This rules are applied for path:
+* the token `$SIBYL` can be used to point to Sibyl installation dir;
+* `~` or `~user` are replaced with the `user` home directory;
+* Environment variables are expanded;
+
