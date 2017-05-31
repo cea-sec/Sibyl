@@ -26,7 +26,7 @@ default_config = {
               "ctype": "$SIBYL/test/ctype.py",
     },
     "pin_root": "$PIN_ROOT",
-    "pin_tracer": "",
+    "pin_tracer": "$SIBYL/ext/pin_tracer/pin_tracer.so",
 }
 
 config_paths = [os.path.join(path, 'sibyl.conf')
@@ -135,6 +135,7 @@ class Config(object):
         out.append("")
         out.append("[pin]")
         out.append("root = %s" % self.config["pin_root"])
+        out.append("tracer = %s" % self.config["pin_tracer"])
 
         return out
 
