@@ -41,6 +41,10 @@ jit_engine = gcc,llvm,tcc,python
 [pin]
 root = $PIN_ROOT
 tracer = $SIBYL/ext/pin_tracer/pin_tracer.so
+
+[learn]
+prune_strategy = branch
+prune_keep = 2
 ```
 
 ### Section 'find'
@@ -88,6 +92,17 @@ If `pin` is already in the user's path, this parameter can be ignored.
 The `tracer` parameter is the path of the compiled version of the tracer
 `ext/pin_tracer/pin_tracer.cpp`, which will probably looks like
 `/path/to/sibyl/ext/pin_tracer/pin_tracer.so`.
+
+### Section 'learn'
+
+This section contains options relative to the `learn` action.
+
+The `prune_strategy` parameter indicates which strategy should be used to prune
+the obtained snapshots. Current supported values are `branch`, `keep`, `keepall`.
+
+The `prune_keep` value specifies the number of snapshot to keep per prunning.
+
+Please refer to the related documentation for more information.
 
 ### Configuration overview
 
