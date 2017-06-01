@@ -170,14 +170,13 @@ class PythonGenerator(Generator):
         atomic_values = {}
         for dst, value in memories.iteritems():
             assert isinstance(dst, ExprMem)
-            assert isinstance(value, ExprInt)
             addr_expr = dst.arg
             for i in xrange(dst.size / 8):
                 # Split in atomic access
                 offset = ExprInt(i, addr_expr.size)
                 sub_addr_expr = expr_simp(addr_expr + offset)
                 mem_access = ExprMem(sub_addr_expr, 8)
-                value_access = ExprInt((int(value) >> (i * 8)) & 0xFF, 8)
+                value_access = expr_simp(value[i * 8:(i + 1) * 8])
 
                 # Keep atomic value
                 atomic_values[mem_access] = value_access
@@ -196,7 +195,7 @@ class PythonGenerator(Generator):
         out = {}
         for dst in fields:
             assert isinstance(dst, ExprMem)
-            accumulator = 0
+            accumulator = []
             addr_expr = dst.arg
             for i in reversed(xrange(dst.size / 8)):
                 # Split in atomic access
@@ -210,11 +209,10 @@ class PythonGenerator(Generator):
                     filled_memory.setdefault(dst, []).append(offset)
                 else:
                     value = atomic_values[mem_access]
-                accumulator <<= 8
-                accumulator += int(value)
+                accumulator.append(value)
 
             # Save the computed value
-            out[dst] = ExprInt(accumulator, dst.size)
+            out[dst] = expr_simp(ExprCompose(*reversed(accumulator)))
 
         out = AssignBlock(out)
         if memories != out:
@@ -408,9 +406,16 @@ class PythonGenerator(Generator):
             assert len(info_C) == 1
             dst_type = info_type[0]
             if objc_is_dereferenceable(dst_type):
-                # We must have considered it before
-                assert dst in fixed
-                value = fixed[dst]
+                if dst not in fixed:
+                    # The pointer is read but never deferenced
+                    # Consider it as an int
+                    value = memory_in[dst]
+                    assert value.is_int()
+                    # Fix it to this value
+                    fixed[dst] = value
+                else:
+                    # We must have considered it before
+                    value = fixed[dst]
             else:
                 value = memory_in[dst]
 
@@ -517,9 +522,16 @@ class PythonGenerator(Generator):
             assert len(info_C) == 1
             dst_type = info_type[0]
             if objc_is_dereferenceable(dst_type):
-                # We must have considered it before
-                assert dst in fixed
-                value = "self.%s" % fixed[dst]
+                if dst not in fixed:
+                    # The pointer is read but never deferenced
+                    # Consider it as an int
+                    value = memory_out[dst]
+                    if not value.is_int():
+                        # Second chance, it may have been fixed
+                        value = fixed[value]
+                    assert value.is_int()
+                else:
+                    value = "self.%s" % fixed[dst]
             else:
                 value = memory_out[dst]
 

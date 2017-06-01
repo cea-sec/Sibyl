@@ -303,7 +303,6 @@ class ExtractRef(object):
         for expr in self.memories_write:
             # Eval the expression with the *output* state
             value = self.symb.eval_expr(expr)
-            assert isinstance(value, m2_expr.ExprInt)
             memory_out[expr] = value
 
         # Fill memory *in* (read)
