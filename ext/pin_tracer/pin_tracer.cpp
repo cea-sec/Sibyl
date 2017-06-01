@@ -125,7 +125,6 @@ VOID DumpRegsO(VOID * ip, ADDRINT rax, ADDRINT rbx, ADDRINT rcx, ADDRINT rdx, AD
 			/* Log output registers */
 			instrument = 0;
 			check_fprintf_error(fprintf(trace,"O %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx\n", rax, rbx, rcx, rdx, rsi, rdi, rbp, rsp, r8, r9, r10, r11, r12, r13, r14, r15));
-			exit(0);
 		}
 	}
 }

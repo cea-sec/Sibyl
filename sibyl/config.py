@@ -27,6 +27,8 @@ default_config = {
     },
     "pin_root": "$PIN_ROOT",
     "pin_tracer": "$SIBYL/ext/pin_tracer/pin_tracer.so",
+    "prune_strategy": "branch",
+    "prune_keep": 2,
 }
 
 config_paths = [os.path.join(path, 'sibyl.conf')
@@ -110,6 +112,20 @@ class Config(object):
             if cparser.has_option("pin", "tracer"):
                 self.config["pin_tracer"] = cparser.get("pin", "tracer")
 
+        # Learning
+        #
+        # [learn]
+        if cparser.has_section("learn"):
+            # prune_strategy = branch
+            if cparser.has_option("learn", "prune_strategy"):
+                self.config["prune_strategy"] = cparser.get("learn",
+                                                            "prune_strategy")
+            # prune_keep = 2
+            if cparser.has_option("learn", "prune_keep"):
+                self.config["prune_keep"] = cparser.getint("learn",
+                                                           "prune_keep")
+
+
 
 
     def dump(self):
@@ -136,6 +152,12 @@ class Config(object):
         out.append("[pin]")
         out.append("root = %s" % self.config["pin_root"])
         out.append("tracer = %s" % self.config["pin_tracer"])
+
+        # Learn
+        out.append("")
+        out.append("[learn]")
+        out.append("prune_strategy = %s" % self.config["prune_strategy"])
+        out.append("prune_keep = %d" % self.config["prune_keep"])
 
         return out
 
@@ -220,6 +242,23 @@ class Config(object):
         It should be the compiled version of ext/pin_tracer/pin_tracer.cpp
         """
         return self.expandpath(self.config["pin_tracer"])
+
+    @property
+    def prune_strategy(self):
+        """Strategy used to prune while learning"""
+        strategy = self.config["prune_strategy"]
+        if strategy not in [
+                "branch",
+                "keepall",
+                "keep",
+        ]:
+            raise ValueError("Unknown strategy type: %s" % strategy)
+        return strategy
+
+    @property
+    def prune_keep(self):
+        """Number of elements to keep for each pruning possibility"""
+        return self.config["prune_keep"]
 
 
 config = Config(default_config, config_paths)
