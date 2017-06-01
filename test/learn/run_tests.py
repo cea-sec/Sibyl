@@ -14,9 +14,7 @@ from sibyl.config import config
 
 # Tests to fix
 unsupported = [
-    "my_strcpy",
     "numerous_arguments",
-    "deref_struct",
 ]
 
 def invoke_pin(filename, func_name, header_filename, cont):
