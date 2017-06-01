@@ -10,5 +10,5 @@ int main(void) __attribute__((optimize("-O0")));
 #endif
 #endif
 int main(void){
-	return numerous_arguments(2,2,2,2,2,2,2,2,2,2,2,2,2,2,2)+numerous_arguments(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1);
+	return numerous_arguments(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15)+numerous_arguments(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1);
 }

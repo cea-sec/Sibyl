@@ -222,7 +222,6 @@ class PythonGenerator(Generator):
             self.logger.debug("OUT SANITIZE: %s", out)
         return out, filled_memory
 
-
     def generate_init(self, snapshot, number):
         '''Return the string corresponding to the code of the init function'''
 
@@ -374,9 +373,28 @@ class PythonGenerator(Generator):
             else:
                 # Set real value from regs or stack
 
-                # TODO: use abicls
-                abi_order = ["RDI", "RSI", "RDX", "RCX", "R8", "R9"]
-                value = hex(snapshot.input_reg[abi_order[i]])
+                for expr, expr_value in snapshot.init_values.iteritems():
+                    if expr.name == "arg%d_%s" % (i, arg_name):
+                        break
+                else:
+                    raise RuntimeError("Unable to find the init values of " \
+                                       "argument %d" % i)
+
+                if expr_value.is_int():
+                    value = int(expr_value)
+                elif expr_value.is_compose():
+                    # Only a part of the argument has been read
+                    # -> fill the rest with 0s
+                    value = 0
+                    for index, val in expr_value.iter_args():
+                        if val.is_int():
+                            val = int(val)
+                        else:
+                            val = 0
+                        value |= (val << index)
+                else:
+                    raise TypeError("An argument should be in the form I, " \
+                                    "or {I, XX}")
 
             self.printer.add_block("self._add_arg(%d, %s)\n" % (i, value))
 

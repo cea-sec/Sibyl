@@ -104,6 +104,21 @@ class ExtractRef(object):
         return any(objc_is_dereferenceable(target_type)
                    for target_type in target_types)
 
+    def get_arg_n(self, arg_number):
+        """Return the Expression corresponding to the argument number
+        @arg_number"""
+        # TODO use abicls
+        abi_order = ["RDI", "RSI", "RDX", "RCX", "R8", "R9"]
+        size = 64
+        sp = m2_expr.ExprId("RSP", 64)
+        if arg_number < len(abi_order):
+            return m2_expr.ExprId(abi_order[arg_number], size)
+        else:
+            destack = (arg_number - len(abi_order) + 1)
+            return m2_expr.ExprMem(sp + m2_expr.ExprInt(destack * size / 8,
+                                                        size),
+                                   size)
+
     def callback(self, jitter):
 
         # Check previous state
@@ -245,20 +260,17 @@ class ExtractRef(object):
         self.return_addr = return_addr
 
         # Inject argument
-        # TODO
-        # TODO: use abicls
-        abi_order = ["RDI", "RSI", "RDX", "RCX", "R8", "R9"]
         self.init_values = {}
         struct_expr_types = {}
         self.args_symbols = []
         for i, param_name in enumerate(self.prototype.args_order):
-            cur_arg_abi = getattr(self.ira.arch.regs, abi_order[i])
+            cur_arg_abi = self.get_arg_n(i)
             cur_arg = m2_expr.ExprId("arg%d_%s" % (i, param_name),
                                      size=cur_arg_abi.size)
+            self.init_values[cur_arg] = self.symb.eval_expr(cur_arg_abi)
             arg_type = self.prototype.args[param_name]
             if objc_is_dereferenceable(arg_type):
                 # Convert the argument to symbol to track access based on it
-                self.init_values[cur_arg] = self.symb.symbols[cur_arg_abi]
                 self.symb.apply_change(cur_arg_abi, cur_arg)
             struct_expr_types[cur_arg.name] = arg_type
             self.args_symbols.append(cur_arg)
@@ -318,6 +330,7 @@ class ExtractRef(object):
         self.snapshot.output_value = output_value
         self.snapshot.c_handler = self.c_handler
         self.snapshot.arguments_symbols = self.args_symbols
+        self.snapshot.init_values = self.init_values
 
     def run(self):
         '''Main function that is in charge of running the test and return the result:

@@ -14,7 +14,6 @@ from sibyl.config import config
 
 # Tests to fix
 unsupported = [
-    "numerous_arguments",
     "copy_struct",
 ]
 
