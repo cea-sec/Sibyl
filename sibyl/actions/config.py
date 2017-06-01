@@ -75,6 +75,10 @@ class ActionConfig(Action):
         else:
             print "PIN tracer not found"
 
+        # Learn
+        print "Learn's pruning strategy: %s/%d" % (config.prune_strategy,
+                                                   config.prune_keep)
+
         # Tests
         print "Tests availables:"
         for name, tests in config.available_tests.iteritems():
