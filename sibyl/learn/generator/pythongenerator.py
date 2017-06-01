@@ -185,6 +185,11 @@ class PythonGenerator(Generator):
                 # full field
                 info_C = c_handler.expr_to_c(mem_access)
                 assert len(info_C) == 1
+
+                if "__PAD__" in info_C[0]:
+                    # This is a field used for padding, ignore it
+                    continue
+
                 expr_sanitize = expr_simp(c_handler.c_to_expr(info_C[0]))
 
                 # Conserve the involved field
