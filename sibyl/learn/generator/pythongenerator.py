@@ -324,14 +324,18 @@ class PythonGenerator(Generator):
         # Reserve memory for each bases
         for expr, Clike in bases_to_C.iteritems():
             ptr = fixed[expr]
+            ptr_size = "%s_size" % ptr
             last_field = max_per_base[expr]
             self.printer.add_block("# %s\n" % Clike)
-            self.printer.add_block('%s = self._alloc_mem(self.field_addr("%s", "%s")'
-                                   ' + self.sizeof("%s"), read=True, write=True)\n' % (ptr,
-                                                                                  Clike,
-                                                                                  last_field,
-                                                                                  last_field)
-            )
+            self.printer.add_block('%s = self.field_addr("%s", "%s") ' \
+                                   '+ self.sizeof("%s")\n' % (ptr_size,
+                                                              Clike,
+                                                              last_field,
+                                                              last_field))
+            self.printer.add_block('%s = self._alloc_mem(%s, read=True, ' \
+                                   'write=True)\n' % (ptr,
+                                                      ptr_size))
+
         self.printer.add_empty_line()
 
         # Set each pointers
