@@ -8,6 +8,8 @@ from miasm2.arch.x86.ctype import CTypeAMD64_unk
 from sibyl.learn.replay import Replay
 from sibyl.learn.findref import ExtractRef
 from sibyl.commons import HeaderFile
+from sibyl.config import config
+
 
 class TestCreator(object):
 
@@ -59,24 +61,35 @@ class TestCreator(object):
             raise RuntimeError(
                 "Test can not be created: function seems not to be called")
 
-    def remove_useless_snapshots(self):
-        '''Keep traces that expose new trace path'''
+    def prune_snapshots(self):
+        '''Prune available snapshots according to the pruning politics'''
 
-        self.logger.info("Removing snapshots that do not expose new path")
-        paths = set()
-        to_be_removed = []
-        for snapshot in self.trace:
-            # If path of current snapshot is already known,
-            path = frozenset(snapshot.paths.edges())
-            if path in paths:
-                to_be_removed += [snapshot]
-            else:
-                paths.add(path)
-        for snapshot in to_be_removed:
-            if len(self.trace) == 2:
-                break
+        self.logger.info("Prunning snapshots: strategy %s, with %d elements " \
+                         "keeped each time",
+                         config.prune_strategy,
+                         config.prune_keep)
+        to_remove = []
+
+        # Prune depending on the strategy
+        if config.prune_strategy == "branch":
+            already_keeped = {} # path -> seen number
+            for snapshot in self.trace:
+                path = frozenset(snapshot.paths.edges())
+                current = already_keeped.get(path, 0)
+                if current >= config.prune_keep:
+                    # path of current snapshot is already known and enough
+                    # occurences are already keeped
+                    to_remove.append(snapshot)
+                already_keeped[path] = current + 1
+        else:
+            raise ValueError("Unsupported strategy type: %s" % config.strategy)
+
+        # Actually removed elements
+        for snapshot in to_remove:
             self.trace.remove(snapshot)
-        self.logger.info("Removed: %d, Keeped: %d", len(to_be_removed), len(self.trace))
+
+        self.logger.info("Removed: %d, Keeped: %d", len(to_remove),
+                         len(self.trace))
 
 
     def clean_trace(self):
@@ -90,7 +103,8 @@ class TestCreator(object):
         '''Find snapshots that do not recognize the learned function'''
 
         self.logger.info("Replaying cleaned snapshots")
-        for snapshot in self.trace:
+        for i, snapshot in enumerate(self.trace):
+            self.logger.info("Replaying snapshot %d", i)
             r = Replay(self, snapshot)
             if not r.run():
                 self.learnexceptiontext += r.replayexception
@@ -99,8 +113,9 @@ class TestCreator(object):
     def extract_refs(self):
         """Real extraction of input"""
 
-        self.logger.info("Find references")
-        for snapshot in self.trace:
+        self.logger.info("Extract references from snapshots")
+        for i, snapshot in enumerate(self.trace):
+            self.logger.info("Extracting snapshot %d", i)
             r = ExtractRef(self, snapshot)
             if not r.run():
                 self.learnexceptiontext += r.replayexception
@@ -132,7 +147,7 @@ class TestCreator(object):
 
         self.create_trace()
 
-        self.remove_useless_snapshots()
+        self.prune_snapshots()
 
         self.clean_trace()
 
