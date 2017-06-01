@@ -250,6 +250,7 @@ class Config(object):
         if strategy not in [
                 "branch",
                 "keepall",
+                "keep",
         ]:
             raise ValueError("Unknown strategy type: %s" % strategy)
         return strategy

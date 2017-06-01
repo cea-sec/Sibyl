@@ -84,8 +84,11 @@ class TestCreator(object):
         elif config.prune_strategy == "keepall":
             # Do not remove any snapshot
             pass
+        elif config.prune_strategy == "keep":
+            # Remove all snapshot but one or a few (according to config)
+            to_remove = self.trace[config.prune_keep:]
         else:
-            raise ValueError("Unsupported strategy type: %s" % config.strategy)
+            raise ValueError("Unsupported strategy type: %s" % config.prune_strategy)
 
         # Actually removed elements
         for snapshot in to_remove:
