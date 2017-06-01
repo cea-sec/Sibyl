@@ -81,6 +81,9 @@ class TestCreator(object):
                     # occurences are already keeped
                     to_remove.append(snapshot)
                 already_keeped[path] = current + 1
+        elif config.prune_strategy == "keepall":
+            # Do not remove any snapshot
+            pass
         else:
             raise ValueError("Unsupported strategy type: %s" % config.strategy)
 

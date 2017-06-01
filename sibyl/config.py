@@ -249,6 +249,7 @@ class Config(object):
         strategy = self.config["prune_strategy"]
         if strategy not in [
                 "branch",
+                "keepall",
         ]:
             raise ValueError("Unknown strategy type: %s" % strategy)
         return strategy
