@@ -170,14 +170,13 @@ class PythonGenerator(Generator):
         atomic_values = {}
         for dst, value in memories.iteritems():
             assert isinstance(dst, ExprMem)
-            assert isinstance(value, ExprInt)
             addr_expr = dst.arg
             for i in xrange(dst.size / 8):
                 # Split in atomic access
                 offset = ExprInt(i, addr_expr.size)
                 sub_addr_expr = expr_simp(addr_expr + offset)
                 mem_access = ExprMem(sub_addr_expr, 8)
-                value_access = ExprInt((int(value) >> (i * 8)) & 0xFF, 8)
+                value_access = expr_simp(value[i * 8:(i + 1) * 8])
 
                 # Keep atomic value
                 atomic_values[mem_access] = value_access
@@ -186,6 +185,11 @@ class PythonGenerator(Generator):
                 # full field
                 info_C = c_handler.expr_to_c(mem_access)
                 assert len(info_C) == 1
+
+                if "__PAD__" in info_C[0]:
+                    # This is a field used for padding, ignore it
+                    continue
+
                 expr_sanitize = expr_simp(c_handler.c_to_expr(info_C[0]))
 
                 # Conserve the involved field
@@ -196,7 +200,7 @@ class PythonGenerator(Generator):
         out = {}
         for dst in fields:
             assert isinstance(dst, ExprMem)
-            accumulator = 0
+            accumulator = []
             addr_expr = dst.arg
             for i in reversed(xrange(dst.size / 8)):
                 # Split in atomic access
@@ -210,18 +214,16 @@ class PythonGenerator(Generator):
                     filled_memory.setdefault(dst, []).append(offset)
                 else:
                     value = atomic_values[mem_access]
-                accumulator <<= 8
-                accumulator += int(value)
+                accumulator.append(value)
 
             # Save the computed value
-            out[dst] = ExprInt(accumulator, dst.size)
+            out[dst] = expr_simp(ExprCompose(*reversed(accumulator)))
 
         out = AssignBlock(out)
         if memories != out:
             self.logger.debug("SANITIZE: %s", memories)
             self.logger.debug("OUT SANITIZE: %s", out)
         return out, filled_memory
-
 
     def generate_init(self, snapshot, number):
         '''Return the string corresponding to the code of the init function'''
@@ -324,14 +326,18 @@ class PythonGenerator(Generator):
         # Reserve memory for each bases
         for expr, Clike in bases_to_C.iteritems():
             ptr = fixed[expr]
+            ptr_size = "%s_size" % ptr
             last_field = max_per_base[expr]
             self.printer.add_block("# %s\n" % Clike)
-            self.printer.add_block('%s = self._alloc_mem(self.field_addr("%s", "%s")'
-                                   ' + self.sizeof("%s"), read=True, write=True)\n' % (ptr,
-                                                                                  Clike,
-                                                                                  last_field,
-                                                                                  last_field)
-            )
+            self.printer.add_block('%s = self.field_addr("%s", "%s") ' \
+                                   '+ self.sizeof("%s")\n' % (ptr_size,
+                                                              Clike,
+                                                              last_field,
+                                                              last_field))
+            self.printer.add_block('%s = self._alloc_mem(%s, read=True, ' \
+                                   'write=True)\n' % (ptr,
+                                                      ptr_size))
+
         self.printer.add_empty_line()
 
         # Set each pointers
@@ -370,9 +376,28 @@ class PythonGenerator(Generator):
             else:
                 # Set real value from regs or stack
 
-                # TODO: use abicls
-                abi_order = ["RDI", "RSI", "RDX", "RCX", "R8", "R9"]
-                value = hex(snapshot.input_reg[abi_order[i]])
+                for expr, expr_value in snapshot.init_values.iteritems():
+                    if expr.name == "arg%d_%s" % (i, arg_name):
+                        break
+                else:
+                    raise RuntimeError("Unable to find the init values of " \
+                                       "argument %d" % i)
+
+                if expr_value.is_int():
+                    value = int(expr_value)
+                elif expr_value.is_compose():
+                    # Only a part of the argument has been read
+                    # -> fill the rest with 0s
+                    value = 0
+                    for index, val in expr_value.iter_args():
+                        if val.is_int():
+                            val = int(val)
+                        else:
+                            val = 0
+                        value |= (val << index)
+                else:
+                    raise TypeError("An argument should be in the form I, " \
+                                    "or {I, XX}")
 
             self.printer.add_block("self._add_arg(%d, %s)\n" % (i, value))
 
@@ -386,9 +411,16 @@ class PythonGenerator(Generator):
             assert len(info_C) == 1
             dst_type = info_type[0]
             if objc_is_dereferenceable(dst_type):
-                # We must have considered it before
-                assert dst in fixed
-                value = fixed[dst]
+                if dst not in fixed:
+                    # The pointer is read but never deferenced
+                    # Consider it as an int
+                    value = memory_in[dst]
+                    assert value.is_int()
+                    # Fix it to this value
+                    fixed[dst] = value
+                else:
+                    # We must have considered it before
+                    value = fixed[dst]
             else:
                 value = memory_in[dst]
 
@@ -495,9 +527,16 @@ class PythonGenerator(Generator):
             assert len(info_C) == 1
             dst_type = info_type[0]
             if objc_is_dereferenceable(dst_type):
-                # We must have considered it before
-                assert dst in fixed
-                value = "self.%s" % fixed[dst]
+                if dst not in fixed:
+                    # The pointer is read but never deferenced
+                    # Consider it as an int
+                    value = memory_out[dst]
+                    if not value.is_int():
+                        # Second chance, it may have been fixed
+                        value = fixed[value]
+                    assert value.is_int()
+                else:
+                    value = "self.%s" % fixed[dst]
             else:
                 value = memory_out[dst]
 

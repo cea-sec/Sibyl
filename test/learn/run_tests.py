@@ -14,7 +14,6 @@ from sibyl.config import config
 
 # Tests to fix
 unsupported = [
-    "numerous_arguments",
 ]
 
 def invoke_pin(filename, func_name, header_filename, cont):
