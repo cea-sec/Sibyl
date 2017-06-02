@@ -113,10 +113,7 @@ class TracerPin(Tracer):
                     # The learned function execution is over
                     # Snapshot can be added to the trace
                     started = False
-                    trace.append(current_snapshot)
-                    if len(trace) > 4:
-                        print "STOP"
-                        break
+                    yield current_snapshot
 
             # Call to a function
             # CALL <caller_addr> <stack pointer>
@@ -127,5 +124,3 @@ class TracerPin(Tracer):
             # RET <ret_addr> <stack pointer after> <ret value>
             elif entry_type == "RET":
                 current_snapshot.add_ret(values[0], values[1], values[2])
-
-        return trace
