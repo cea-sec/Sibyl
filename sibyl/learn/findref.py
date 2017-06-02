@@ -104,6 +104,9 @@ class ExtractRef(object):
         return any(objc_is_dereferenceable(target_type)
                    for target_type in target_types)
 
+    def is_symbolic(self, expr):
+        return expr.is_mem() and not expr.arg.is_int()
+
     def get_arg_n(self, arg_number):
         """Return the Expression corresponding to the argument number
         @arg_number"""
@@ -122,9 +125,6 @@ class ExtractRef(object):
     def callback(self, jitter):
 
         # Check previous state
-        is_symbolic = lambda expr: (isinstance(expr, m2_expr.ExprMem) and
-                                    not isinstance(expr.arg, m2_expr.ExprInt))
-
 
         # When it is possible, consider only elements modified in the last run
         # -> speed up to avoid browsing the whole memory
@@ -140,7 +140,7 @@ class ExtractRef(object):
             to_replace = {}
             for expr in m2_expr.ExprAff(symbol,
                                         symb_value).get_r(mem_read=True):
-                if is_symbolic(expr):
+                if self.is_symbolic(expr):
                     if isinstance(expr, m2_expr.ExprMem):
                         # Consider each byte individually
                         # Case: @32[X] with only @8[X+1] to replace

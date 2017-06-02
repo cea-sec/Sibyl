@@ -7,6 +7,7 @@ from miasm2.arch.x86.ctype import CTypeAMD64_unk
 
 from sibyl.learn.replay import Replay
 from sibyl.learn.findref import ExtractRef
+from sibyl.learn.trace import Trace
 from sibyl.commons import HeaderFile
 from sibyl.config import config
 
@@ -54,49 +55,55 @@ class TestCreator(object):
         self.logger.info("Tracing the program")
         tracer = self.tracer_class(
             self.program, self.address, self.main_address, self.abicls, self.machine)
-        self.trace = tracer.do_trace()
-
-        # If the trace is empty, test can not be created
-        if not self.trace:
-            raise RuntimeError(
-                "Test can not be created: function seems not to be called")
+        self.trace_iter = tracer.do_trace()
 
     def prune_snapshots(self):
         '''Prune available snapshots according to the pruning politics'''
 
-        self.logger.info("Prunning snapshots: strategy %s, with %d elements " \
-                         "keeped each time",
+        self.logger.info("Parsing and prunning snapshots: strategy %s, " \
+                         "with %d elements keeped each time",
                          config.prune_strategy,
                          config.prune_keep)
-        to_remove = []
+        trace = Trace()
+        ignored = None
 
         # Prune depending on the strategy
         if config.prune_strategy == "branch":
+            ignored = 0
             already_keeped = {} # path -> seen number
-            for snapshot in self.trace:
+            for snapshot in self.trace_iter:
                 path = frozenset(snapshot.paths.edges())
                 current = already_keeped.get(path, 0)
-                if current >= config.prune_keep:
-                    # path of current snapshot is already known and enough
-                    # occurences are already keeped
-                    to_remove.append(snapshot)
+                if current < config.prune_keep:
+                    # not enough sample of this current snapshot branch coverage
+                    trace.append(snapshot)
+                else:
+                    ignored += 1
                 already_keeped[path] = current + 1
         elif config.prune_strategy == "keepall":
             # Do not remove any snapshot
-            pass
+            trace = list(self.trace_iter)
+            ignored = 0
         elif config.prune_strategy == "keep":
             # Remove all snapshot but one or a few (according to config)
-            to_remove = self.trace[config.prune_keep:]
+            for i, snapshot in xrange(self.trace):
+                trace.append(snapshot)
+                if len(trace) >= config.prune_keep:
+                    break
         else:
             raise ValueError("Unsupported strategy type: %s" % config.prune_strategy)
 
-        # Actually removed elements
-        for snapshot in to_remove:
-            self.trace.remove(snapshot)
+        self.trace = trace
+        if ignored is None:
+            ignored = "unknown"
+        self.logger.info("Keeped: %d, Ignored: %s", len(self.trace),
+                         ignored)
 
-        self.logger.info("Removed: %d, Keeped: %d", len(to_remove),
-                         len(self.trace))
-
+        # If the trace is empty, test can not be created
+        if not self.trace:
+            raise RuntimeError(
+                "Test can not be created: function seems not to be called or " \
+                "the prune politic is too restrictive")
 
     def clean_trace(self):
         '''Try to remove all implementation dependant elements from the trace'''
@@ -109,12 +116,15 @@ class TestCreator(object):
         '''Find snapshots that do not recognize the learned function'''
 
         self.logger.info("Replaying cleaned snapshots")
+        to_remove = []
         for i, snapshot in enumerate(self.trace):
             self.logger.info("Replaying snapshot %d", i)
             r = Replay(self, snapshot)
             if not r.run():
-                self.learnexceptiontext += r.replayexception
-                self.trace.remove(snapshot)
+                self.logger.warn("Replay error: %s", ", ".join(r.replayexception))
+                to_remove.append(snapshot)
+        for snapshot in to_remove:
+            self.trace.remove(snapshot)
 
     def extract_refs(self):
         """Real extraction of input"""
