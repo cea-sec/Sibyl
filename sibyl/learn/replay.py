@@ -111,6 +111,7 @@ class Replay(object):
             jitter.continue_run()
             assert jitter.run == False
         except AssertionError:
+            # set the replayexception to the correct error
             if jitter.vm.get_exception() & EXCEPT_ACCESS_VIOL:
                 self.replayexception += ["access violation"]
             elif jitter.vm.get_exception() & EXCEPT_DIV_BY_ZERO:

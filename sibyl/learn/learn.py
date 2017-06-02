@@ -116,12 +116,15 @@ class TestCreator(object):
         '''Find snapshots that do not recognize the learned function'''
 
         self.logger.info("Replaying cleaned snapshots")
+        to_remove = []
         for i, snapshot in enumerate(self.trace):
             self.logger.info("Replaying snapshot %d", i)
             r = Replay(self, snapshot)
             if not r.run():
-                self.learnexceptiontext += r.replayexception
-                self.trace.remove(snapshot)
+                self.logger.warn("Replay error: %s", ", ".join(r.replayexception))
+                to_remove.append(snapshot)
+        for snapshot in to_remove:
+            self.trace.remove(snapshot)
 
     def extract_refs(self):
         """Real extraction of input"""
