@@ -114,9 +114,6 @@ class TracerPin(Tracer):
                     # Snapshot can be added to the trace
                     started = False
                     trace.append(current_snapshot)
-                    if len(trace) > 4:
-                        print "STOP"
-                        break
 
             # Call to a function
             # CALL <caller_addr> <stack pointer>
