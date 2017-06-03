@@ -399,7 +399,8 @@ class PythonGenerator(Generator):
                     raise TypeError("An argument should be in the form I, " \
                                     "or {I, XX}")
 
-            self.printer.add_block("self._add_arg(%d, %s)\n" % (i, value))
+            self.printer.add_block("self._add_arg(%d, %s) # arg%d_%s\n" %
+                                   (i, value, i, arg_name))
 
         ## Inputs
         self.printer.add_empty_line()

@@ -42,6 +42,9 @@ class ActionLearn(Action):
         (["-o", "--output"], {"help": "Output file. Class is printed to stdout" \
                               "if no output file is specified.",
                               "default": None}),
+        (["-z", "--avoid-null"], {"help": "If set, do not consider runs "\
+                                  "returning a null value",
+                                  "action": "store_true"}),
     ]
 
     def run(self):
@@ -71,7 +74,7 @@ class ActionLearn(Action):
                                   self.args.program, self.args.headerfile,
                                   AVAILABLE_TRACER[self.args.trace],
                                   AVAILABLE_GENERATOR[self.args.generator],
-                                  main, abi, machine)
+                                  main, abi, machine, self.args.avoid_null)
 
         if self.args.verbose == 0:
             testcreator.logger.setLevel(logging.WARN)

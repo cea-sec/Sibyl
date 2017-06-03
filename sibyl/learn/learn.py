@@ -17,7 +17,8 @@ class TestCreator(object):
     """Class used to create a test. Each instance is dedicated to only one learned function"""
 
     def __init__(self, functionname, address, program, header_filename,
-                 tracer_class, generator_class, main_address, abicls, machine):
+                 tracer_class, generator_class, main_address, abicls, machine,
+                 avoid_null):
         """
         @functionname: name of the symbol of the learned function
         @address: address of the learned function in the program
@@ -28,6 +29,7 @@ class TestCreator(object):
         @main_address: address where the tracer has to begin, if none the tracer begins at the entry point
         @abicls: class of the ABI used by the program
         @machine: machine used by the program
+        @avoid_null: if set, do not consider snapshots returning a null value
         """
         self.functionname = functionname
         self.address = address
@@ -39,6 +41,7 @@ class TestCreator(object):
         self.abicls = abicls
         self.machine = machine
         self.types = None
+        self.avoid_null = avoid_null
 
         self.learnexceptiontext = []
 
@@ -72,6 +75,11 @@ class TestCreator(object):
             ignored = 0
             already_keeped = {} # path -> seen number
             for snapshot in self.trace_iter:
+                # TODO use abi
+                if self.avoid_null and snapshot.output_reg["RAX"] == 0:
+                    ignored += 1
+                    continue
+
                 path = frozenset(snapshot.paths.edges())
                 current = already_keeped.get(path, 0)
                 if current < config.prune_keep:
@@ -80,6 +88,10 @@ class TestCreator(object):
                 else:
                     ignored += 1
                 already_keeped[path] = current + 1
+                if config.prune_keep_max and len(trace) >= config.prune_keep_max:
+                    self.logger.info("Max number of snapshot reached!")
+                    break
+
         elif config.prune_strategy == "keepall":
             # Do not remove any snapshot
             trace = list(self.trace_iter)

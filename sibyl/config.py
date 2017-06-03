@@ -28,7 +28,8 @@ default_config = {
     "pin_root": "$PIN_ROOT",
     "pin_tracer": "$SIBYL/ext/pin_tracer/pin_tracer.so",
     "prune_strategy": "branch",
-    "prune_keep": 2,
+    "prune_keep": 1,
+    "prune_keep_max": 5,
 }
 
 config_paths = [os.path.join(path, 'sibyl.conf')
@@ -120,10 +121,14 @@ class Config(object):
             if cparser.has_option("learn", "prune_strategy"):
                 self.config["prune_strategy"] = cparser.get("learn",
                                                             "prune_strategy")
-            # prune_keep = 2
+            # prune_keep = 1
             if cparser.has_option("learn", "prune_keep"):
                 self.config["prune_keep"] = cparser.getint("learn",
                                                            "prune_keep")
+            # prune_keep_max = 5
+            if cparser.has_option("learn", "prune_keep_max"):
+                self.config["prune_keep"] = cparser.getint("learn",
+                                                           "prune_keep_max")
 
 
 
@@ -158,6 +163,7 @@ class Config(object):
         out.append("[learn]")
         out.append("prune_strategy = %s" % self.config["prune_strategy"])
         out.append("prune_keep = %d" % self.config["prune_keep"])
+        out.append("prune_keep_max = %d" % self.config["prune_keep_max"])
 
         return out
 
@@ -259,6 +265,11 @@ class Config(object):
     def prune_keep(self):
         """Number of elements to keep for each pruning possibility"""
         return self.config["prune_keep"]
+
+    @property
+    def prune_keep_max(self):
+        """Maximum number of snapshot to keep while pruning"""
+        return self.config["prune_keep_max"]
 
 
 config = Config(default_config, config_paths)
