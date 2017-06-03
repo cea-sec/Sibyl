@@ -80,6 +80,10 @@ class TestCreator(object):
                 else:
                     ignored += 1
                 already_keeped[path] = current + 1
+                if config.prune_keep_max and len(trace) >= config.prune_keep_max:
+                    self.logger.info("Max number of snapshot reached!")
+                    break
+
         elif config.prune_strategy == "keepall":
             # Do not remove any snapshot
             trace = list(self.trace_iter)
