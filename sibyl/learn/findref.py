@@ -212,7 +212,7 @@ class ExtractRef(object):
         # Update state
         ## Reset cache structures
         self.mdis.job_done.clear()
-        self.symb_ir.blocs.clear()
+        self.symb_ir.blocks.clear()
 
         ## Update current state
         asm_block = self.mdis.dis_bloc(cur_addr)
