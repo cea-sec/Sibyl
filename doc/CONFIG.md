@@ -44,7 +44,8 @@ tracer = $SIBYL/ext/pin_tracer/pin_tracer.so
 
 [learn]
 prune_strategy = branch
-prune_keep = 2
+prune_keep = 1
+prune_keep_max = 5
 ```
 
 ### Section 'find'
@@ -101,6 +102,9 @@ The `prune_strategy` parameter indicates which strategy should be used to prune
 the obtained snapshots. Current supported values are `branch`, `keep`, `keepall`.
 
 The `prune_keep` value specifies the number of snapshot to keep per prunning.
+
+The `prune_keep_map` value specifies the overall maximum number of snapshot to
+keep. `0` means no limit.
 
 Please refer to the related documentation for more information.
 
