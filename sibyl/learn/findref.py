@@ -135,10 +135,6 @@ class ExtractRef(object):
             if symbol == self.ira.pc:
                 continue
 
-            # Write to @NN[... argX ...]
-            if self.is_symbolic(symbol):
-                self.memories_write.add(symbol)
-
             # Read from ... @NN[... argX ...] ...
             symb_value = self.symb.eval_expr(symbol)
             to_replace = {}
@@ -170,6 +166,12 @@ class ExtractRef(object):
                     if expr not in self.memories_write:
                         # Do not consider memory already written during the run
                         self.memories_read.add(expr)
+
+            # Write to @NN[... argX ...]
+            # Must be after Read, case: @[X] = f(@[X])
+            if self.is_symbolic(symbol):
+                self.memories_write.add(symbol)
+
 
             # Replace with real value for non-pointer symbols
             if to_replace:
