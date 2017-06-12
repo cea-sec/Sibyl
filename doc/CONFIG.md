@@ -128,6 +128,7 @@ This `Config` instance provides:
 
 This rules are applied for path:
 * the token `$SIBYL` can be used to point to Sibyl installation dir;
+* the token `$MIASM` can be used to point to Miasm2 installation dir;
 * `~` or `~user` are replaced with the `user` home directory;
 * Environment variables are expanded;
 
