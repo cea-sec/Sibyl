@@ -20,10 +20,11 @@
 import time
 import signal
 import logging
-from miasm2.analysis.binary import Container
+from miasm2.analysis.binary import Container, ContainerPE, ContainerELF
 
 from sibyl.commons import init_logger, TimeoutException, END_ADDR
 from sibyl.engine import QEMUEngine, MiasmEngine
+from sibyl.config import config
 
 class TestLauncher(object):
     "Launch tests for a function and report matching candidates"
@@ -40,11 +41,42 @@ class TestLauncher(object):
 
         # Init and snapshot VM
         self.load_vm(filename, map_addr)
+        self.init_stub()
         self.snapshot = self.engine.take_snapshot()
 
         # Init tests
         self.init_abi(abicls)
         self.initialize_tests(tests_cls)
+
+    def init_stub(self):
+        """Initialize stubbing capabilities"""
+        if not isinstance(self.engine, MiasmEngine):
+            # Unsupported capability
+            return
+
+        # Get stubs' implementation
+        context = {}
+        for fpath in config.stubs:
+            execfile(fpath, context)
+        if not context:
+            return
+
+        libs = None
+        if isinstance(self.ctr, ContainerPE):
+            from miasm2.jitter.loader.pe import preload_pe, libimp_pe
+            libs = libimp_pe()
+            preload_pe(self.jitter.vm, self.ctr.executable, libs)
+
+        elif isinstance(self.ctr, ContainerELF):
+            from miasm2.jitter.loader.elf import preload_elf, libimp_elf
+            libs = libimp_elf()
+            preload_elf(self.jitter.vm, self.ctr.executable, libs)
+
+        else:
+            return
+
+        # Add associated breakpoints
+        self.jitter.add_lib_handler(libs, context)
 
     def initialize_tests(self, tests_cls):
         tests = []
