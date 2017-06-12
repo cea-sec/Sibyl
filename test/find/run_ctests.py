@@ -117,7 +117,7 @@ def test_find(args):
         found = []
         stdout, stderr = sibyl.communicate()
         for line in stdout.split("\n"):
-            if not line:
+            if not line or not " : " in line:
                 continue
             addr, func = line.split(" : ")
             found.append((int(addr, 0), func))
