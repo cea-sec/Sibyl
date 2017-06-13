@@ -63,6 +63,13 @@ class ActionConfig(Action):
         print "Jitter engine (preference order): %s" % ", ".join(engines)
         print "Elected jitter engine: %s" % config.jit_engine
 
+        # Stubbing
+        stubs = config.stubs
+        if stubs:
+            print "API stubbing activated on supported jitter, from %d files" % len(stubs)
+        else:
+            print "API stubbing is deactivated"
+
         # PIN
         if (config.pin_root and
             os.path.exists(os.path.join(config.pin_root, "pin"))):

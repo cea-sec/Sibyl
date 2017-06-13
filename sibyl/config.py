@@ -30,6 +30,9 @@ default_config = {
     "prune_strategy": "branch",
     "prune_keep": 1,
     "prune_keep_max": 5,
+    "stubs": ["$MIASM/os_dep/win_api_x86_32.py",
+              "$MIASM/os_dep/linux_stdlib.py",
+    ]
 }
 
 config_paths = [os.path.join(path, 'sibyl.conf')
@@ -61,12 +64,18 @@ class Config(object):
     def expandpath(path):
         """Expand @path with following rules:
         - $SIBYL is replaced by the installation path of Sibyl
+        - $MIASM is replaced by the installation path of miasm2
         - path are expanded ('~' -> '/home/user', ...)
         """
         if "$SIBYL" in path:
             import sibyl
             sibyl_base = sibyl.__path__[0]
             path = path.replace("$SIBYL", sibyl_base)
+
+        if "$MIASM" in path:
+            import miasm2
+            miasm2_base = miasm2.__path__[0]
+            path = path.replace("$MIASM", miasm2_base)
 
         path = os.path.expandvars(path)
         path = os.path.expanduser(path)
@@ -85,6 +94,10 @@ class Config(object):
             # jit_engine = qemu,llvm,gcc
             if cparser.has_option("find", "jit_engine"):
                 self.config["jit_engine"] = cparser.get("find", "jit_engine").split(",")
+
+            # stubs = $MIASM/file.py,$MIASM/file2.py
+            if cparser.has_option("find", "stubs"):
+                self.config["stubs"] = cparser.get("find", "stubs").split(",")
 
         # Tests
         #
@@ -140,6 +153,7 @@ class Config(object):
         # Find
         out.append("[find]")
         out.append("jit_engine = %s" % ",".join(self.config["jit_engine"]))
+        out.append("stubs = %s" % ",".join(self.config["stubs"]))
 
         # Tests
         out.append("")
@@ -270,6 +284,14 @@ class Config(object):
     def prune_keep_max(self):
         """Maximum number of snapshot to keep while pruning"""
         return self.config["prune_keep_max"]
+
+    @property
+    def stubs(self):
+        """List of paths to Python files implementing API stubs"""
+        return [path
+                for path in (self.expandpath(path)
+                             for path in self.config["stubs"])
+                if os.path.exists(path)]
 
 
 config = Config(default_config, config_paths)

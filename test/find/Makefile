@@ -16,7 +16,7 @@
 
 CC := gcc
 CFLAGS := -m32 -O0 --static
-PROGRAMS := test_string test_stdlib test_ctype
+PROGRAMS := test_string test_stdlib test_ctype test_stub
 
 all: $(PROGRAMS)
 
@@ -26,6 +26,10 @@ all: $(PROGRAMS)
 test_string: test_string.c
 test_stdlib: test_stdlib.c
 test_ctype: test_ctype.c
+test_stub: test_stub.c
+	$(CC) -m32 -O0 $< -o $@
+
+
 
 clean:
 	rm -f $(PROGRAMS)

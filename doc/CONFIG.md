@@ -29,6 +29,7 @@ The default configuration is equivalent to:
 ```Python
 [find]
 jit_engine = qemu,miasm
+stubs = $MIASM/os_dep/win_api_x86_32.py,$MIASM/os_dep/linux_stdlib.py
 
 [tests]
 ctype = $SIBYL/test/ctype.py
@@ -58,6 +59,11 @@ If the first engine is not available, then the second is used, and so on.
 The keyword `miasm` can be used to stand for the Miasm elected engine.
 
 To known the jitter engine elected, use `sibyl config -V jit_engine`.
+
+The `stubs` parameter is a list, separated by ',' of Python file path. These
+files can implement stubs (as Python function with the correct name). These
+stubs will be used to emulate external APIs, on supported jitter engines, during
+the `find` action.
 
 ### Section 'tests'
 
@@ -128,6 +134,7 @@ This `Config` instance provides:
 
 This rules are applied for path:
 * the token `$SIBYL` can be used to point to Sibyl installation dir;
+* the token `$MIASM` can be used to point to Miasm2 installation dir;
 * `~` or `~user` are replaced with the `user` home directory;
 * Environment variables are expanded;
 

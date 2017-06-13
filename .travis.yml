@@ -31,6 +31,8 @@ before_script:
 - "python -c 'import unicorn'"
 # install pycparser
 - "pip install pycparser"
+# install pycrypto
+- "pip install pycrypto"
 # install Sibyl
 - "cd Sibyl && python setup.py install && cd ..;"
 # get tests
