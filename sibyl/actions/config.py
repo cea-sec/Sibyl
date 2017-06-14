@@ -87,6 +87,13 @@ class ActionConfig(Action):
                                                       config.prune_keep,
                                                       config.prune_keep_max)
 
+        # IDA
+        idaq64_path = config.idaq64_path
+        if idaq64_path:
+            "IDA has been found at: %s" % idaq64_path
+        else:
+            print "IDA has been not found"
+
         # Tests
         print "Tests availables:"
         for name, tests in config.available_tests.iteritems():

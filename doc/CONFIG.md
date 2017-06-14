@@ -47,6 +47,9 @@ tracer = $SIBYL/ext/pin_tracer/pin_tracer.so
 prune_strategy = branch
 prune_keep = 1
 prune_keep_max = 5
+
+[ida]
+idaq64 =
 ```
 
 ### Section 'find'
@@ -113,6 +116,13 @@ The `prune_keep_map` value specifies the overall maximum number of snapshot to
 keep. `0` means no limit.
 
 Please refer to the related documentation for more information.
+
+### Section 'ida'
+
+This section contains options relative to IDA use.
+
+The `idaq64` parameter is the path of the `idaq64` binary. It will be used to
+find the executable if it is not in the `$PATH`.
 
 ### Configuration overview
 

@@ -1,11 +1,15 @@
 "Module for function address guessing"
 import logging
 import re
+import tempfile
+import subprocess
+import os
 
 from miasm2.core.asmblock import AsmBlockBad, log_asmblock
 
 from sibyl.heuristics.heuristic import Heuristic
 import sibyl.heuristics.csts as csts
+from sibyl.config import config
 
 
 def recursive_call(func_heur, addresses=None):
@@ -103,6 +107,46 @@ def pattern_matching(func_heur):
     return addresses
 
 
+def ida_funcs(func_heur):
+    """Use IDA heuristics to find functions"""
+
+    idaq64_path = config.idaq64_path
+    if not idaq64_path:
+        return {}
+
+    # Prepare temporary files: script and output
+    tmp_script = tempfile.NamedTemporaryFile(suffix=".py", delete=True)
+    tmp_out = tempfile.NamedTemporaryFile(suffix=".addr", delete=True)
+
+    tmp_script.write("""idaapi.autoWait()
+open("%s", "w").write("\\n".join("0x%%x" %% x for x in Functions()))
+Exit(0)
+""" % tmp_out.name)
+    tmp_script.flush()
+
+    # Launch IDA
+    env = os.environ.copy()
+    env["TVHEADLESS"] = "true"
+    run = subprocess.Popen([idaq64_path, "-A",
+                            "-OIDAPython:%s" % tmp_script.name,
+                            func_heur.filename],
+                            env=env,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE,
+    )
+    run.communicate()
+
+    # Get back addresses
+    tmp_out.seek(0)
+    addresses = {int(x, 16): 1 for x in tmp_out}
+
+    # Clean-up
+    tmp_script.close()
+    tmp_out.close()
+
+    return addresses
+
+
 class FuncHeuristic(Heuristic):
     """Provide heuristic for function start address detection"""
 
@@ -110,16 +154,19 @@ class FuncHeuristic(Heuristic):
     heuristics = [
         pattern_matching,
         recursive_call,
+        ida_funcs,
     ]
 
-    def __init__(self, cont, machine):
+    def __init__(self, cont, machine, filename):
         """
         @cont: miasm2's Container instance
         @machine: miasm2's Machine instance
+        @filename: target's filename
         """
         super(FuncHeuristic, self).__init__()
         self.cont = cont
         self.machine = machine
+        self.filename = filename
 
     def do_votes(self):
         """Call recursive_call at the end"""
