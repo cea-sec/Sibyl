@@ -21,7 +21,7 @@ from miasm2.analysis.binary import Container
 
 from sibyl.config import config, config_paths
 from sibyl.actions.action import Action
-from sibyl.heuristics.func import FuncHeuristic
+from sibyl.heuristics.func import FuncHeuristic, ida_funcs
 from sibyl.heuristics.arch import ArchHeuristic
 
 
@@ -67,6 +67,10 @@ class ActionFunc(Action):
         machine = Machine(architecture)
         addr_size = machine.ira().pc.size / 4
         fh = FuncHeuristic(cont, machine, self.args.filename)
+
+        # Default: force only IDA if available
+        if config.idaq64_path:
+            fh.heuristics = [ida_funcs]
 
         # Enable / disable heuristics
         for name in self.args.enable_heuristic:
