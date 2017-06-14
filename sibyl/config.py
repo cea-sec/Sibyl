@@ -32,7 +32,8 @@ default_config = {
     "prune_keep_max": 5,
     "stubs": ["$MIASM/os_dep/win_api_x86_32.py",
               "$MIASM/os_dep/linux_stdlib.py",
-    ]
+    ],
+    "idaq64_path": "",
 }
 
 config_paths = [os.path.join(path, 'sibyl.conf')
@@ -143,7 +144,13 @@ class Config(object):
                 self.config["prune_keep"] = cparser.getint("learn",
                                                            "prune_keep_max")
 
-
+        # IDA
+        #
+        # [ida]
+        if cparser.has_section("ida"):
+            # idaq64 = /path/to/idaq64
+            if cparser.has_option("ida", "idaq64"):
+                self.config["idaq64_path"] = cparser.get("ida", "idaq64")
 
 
     def dump(self):
@@ -178,6 +185,11 @@ class Config(object):
         out.append("prune_strategy = %s" % self.config["prune_strategy"])
         out.append("prune_keep = %d" % self.config["prune_keep"])
         out.append("prune_keep_max = %d" % self.config["prune_keep_max"])
+
+        # IDA
+        out.append("")
+        out.append("[ida]")
+        out.append("idaq64 = %s" % self.config["idaq64_path"])
 
         return out
 
@@ -293,5 +305,21 @@ class Config(object):
                              for path in self.config["stubs"])
                 if os.path.exists(path)]
 
+    @property
+    def idaq64_path(self):
+        """Path of idaq64 binary, from config or PATH"""
+        # Use custom value first
+        if self.config["idaq64_path"]:
+            path = self.expandpath(self.config["idaq64"])
+            if os.path.exists(path):
+                return path
+
+        # Try to find in $PATH
+        for path in os.environ["PATH"].split(os.pathsep):
+            path = os.path.join(path.strip('"'), "idaq64")
+            if os.path.exists(path):
+                return path
+
+        return None
 
 config = Config(default_config, config_paths)
