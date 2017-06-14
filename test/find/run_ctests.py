@@ -45,7 +45,7 @@ def get_funcs_exe_source(c_file, filename):
 def get_funcs_heuristics(c_file, filename):
     """Get function from Sibyl heuristics"""
     # Force the activation of all heuristics
-    fh = FuncHeuristic(None, None)
+    fh = FuncHeuristic(None, None, "")
     cmd = ["sibyl", "func"]
     for name in fh.heuristic_names:
         cmd += ["-e", name]
