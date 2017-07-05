@@ -17,8 +17,12 @@ import os
 import json
 import subprocess
 import time
+import re
 
-from idaapi import *
+import idaapi
+import idc
+import ida_kernwin
+import idautils
 
 # Find SIBYL find.py
 identify_binary = "sibyl"
@@ -65,7 +69,7 @@ def handle_found(addr, candidates):
     @candidates: list of string of possible matched functions
     """
     print "Found %s at %s" % (",".join(candidates), hex(addr))
-    SetFunctionCmt(addr, "[Sibyl] %s?" % ",".join(candidates), False)
+    idc.SetFunctionCmt(addr, "[Sibyl] %s?" % ",".join(candidates), False)
 
 
 def launch_on_funcs(architecture, abi, funcs, test_set, map_addr=None,
@@ -90,7 +94,7 @@ def launch_on_funcs(architecture, abi, funcs, test_set, map_addr=None,
         raise ValueError("A valid Sibyl path to find.py must be supplied")
 
     # Get binary information
-    filename = str(GetInputFilePath())
+    filename = str(idc.GetInputFilePath())
     nb_func = len(funcs)
 
     # Prepare run
@@ -138,18 +142,18 @@ def launch_on_funcs(architecture, abi, funcs, test_set, map_addr=None,
 
 
 # IDA Interfacing
-class sibylForm(Form):
+class sibylForm(ida_kernwin.Form):
     """IDA Form to launch analysis on one or many function, according to a few
 customizable parameters
     """
 
     def __init__(self):
 
-        addr = ScreenEA()
+        addr = idc.ScreenEA()
         func = idaapi.get_func(addr)
 
         tests_choice = "\n".join(map(lambda x: "<%s:{r%s}>" % (x, x), AVAILABLE_TESTS))
-        Form.__init__(self,
+        ida_kernwin.Form.__init__(self,
 r"""BUTTON YES* Launch
 BUTTON CANCEL NONE
 Sibyl Settings
@@ -165,12 +169,12 @@ Testsets to use:
 %s{cTest}>
 
 """ % tests_choice, {
-    'FormChangeCb': Form.FormChangeCb(self.OnFormChange),
-    'cMode': Form.RadGroupControl(("rOneFunc", "rAllFunc")),
-    'cTest': Form.ChkGroupControl(map(lambda x: "r%s" % x,
+    'FormChangeCb': ida_kernwin.Form.FormChangeCb(self.OnFormChange),
+    'cMode': ida_kernwin.Form.RadGroupControl(("rOneFunc", "rAllFunc")),
+    'cTest': ida_kernwin.Form.ChkGroupControl(map(lambda x: "r%s" % x,
                                       AVAILABLE_TESTS),
                                   value=(1 << len(AVAILABLE_TESTS)) - 1),
-    'cbFunc': Form.DropdownListControl(
+    'cbFunc': ida_kernwin.Form.DropdownListControl(
         items=self.available_funcs,
         readonly=False,
         selval="0x%x" % func.startEA),
@@ -187,7 +191,7 @@ Testsets to use:
 
     @property
     def available_funcs(self):
-        return map(lambda x:"0x%x" % x, Functions())
+        return map(lambda x:"0x%x" % x, idautils.Functions())
 
     @property
     def funcs(self):
@@ -208,7 +212,7 @@ Testsets to use:
         Ripped from Miasm2 / examples / ida / utils
         """
 
-        processor_name = GetLongPrm(INF_PROCNAME)
+        processor_name = idc.GetLongPrm(idc.INF_PROCNAME)
 
         if processor_name in self.IDAarch2MiasmArch:
             name = self.IDAarch2MiasmArch[processor_name]
@@ -216,14 +220,13 @@ Testsets to use:
         elif processor_name == "metapc":
 
             # HACK: check 32/64 using INF_START_SP
-            max_size = GetLongPrm(INF_START_SP)
-            if max_size == 0x80:  # TODO XXX check
-                name = "x86_16"
-            elif max_size == 0xFFFFFFFF:
+            inf = idaapi.get_inf_structure()
+            if inf.is_32bit():
                 name = "x86_32"
-                name = "x86_32"
-            elif max_size == 0xFFFFFFFFFFFFFFFF:
+            elif inf.is_64bit():
                 name = "x86_64"
+            elif idc.GetLongPrm(idc.INF_START_SP) == 0x80:
+                name = "x86_16"
             else:
                 raise ValueError('cannot guess 32/64 bit! (%x)' % max_size)
         elif processor_name == "ARM":
@@ -280,8 +283,8 @@ Testsets to use:
             return available_abis
 
         # Search for IDA guessed type
-        for func_addr in Functions():
-            gtype = GuessType(func_addr)
+        for func_addr in idautils.Functions():
+            gtype = idc.GuessType(func_addr)
             if gtype is None:
                 continue
             match = self.gtype_matcher.match(gtype)
@@ -305,16 +308,14 @@ Testsets to use:
         return tests
 
 
-# Main
-settings = sibylForm()
-settings.Execute()
+if __name__ == "__main__":
+    # Main
+    settings = sibylForm()
+    settings.Execute()
 
-abis = {"x86_32": "ABIStdCall_x86_32",
-        "arml": "ABI_ARM"}
-
-sibyl_res = launch_on_funcs(settings.architecture,
-                            settings.abi,
-                            settings.funcs,
-                            settings.tests)
-print "Results are also available in 'sibyl_res'"
+    sibyl_res = launch_on_funcs(settings.architecture,
+                                settings.abi,
+                                settings.funcs,
+                                settings.tests)
+    print "Results are also available in 'sibyl_res'"
 
