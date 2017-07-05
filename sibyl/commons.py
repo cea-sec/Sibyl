@@ -55,15 +55,23 @@ class HeaderFile(object):
         self.data = header_data
         self.ctype_manager = ctype_manager
 
-        # We can't use add_c_decl, because we need the AST to get back
-        # function's arguments name
-        self.ast = c_to_ast(header_data)
+        self.ast = self.parse_header(header_data)
         self.ctype_manager.types_ast.add_c_decl(header_data)
         self.functions = {} # function name -> FuncPrototype
 
         if pycparser is None:
             raise ImportError("pycparser module is needed to parse header file")
         self.parse_functions()
+
+    @staticmethod
+    def parse_header(header_data):
+        """Return the AST corresponding to @header_data
+        @header_data: str of a C-like header file
+        """
+        # We can't use add_c_decl, because we need the AST to get back
+        # function's arguments name
+        parser = pycparser.c_parser.CParser()
+        return c_to_ast(parser, header_data)
 
     def parse_functions(self):
         """Search for function declarations"""
