@@ -212,3 +212,21 @@ Found 7 test cases
 0x00429270 : add_sf64
 0x0042ee70 : div_sf64
 ```
+
+### Known limitations
+
+The learning module has known limitations.
+
+As mentioned in the previous section, it is necessary to have a working binary,
+which call the function with valid arguments.
+
+In addition, this binary must be *traceable*, which could not be the case,
+depending on the architecture.
+
+The limitation of Sibyl are also applied to this module; for instance and for
+now, there is no support of floating argument, or ABI specificity such as
+structure in-lining in arguments.
+
+For now Sibyl does not track, and then does not support, functions using an
+allocator for their semantic use (for example, a function allocating a new
+structure through `malloc`).
