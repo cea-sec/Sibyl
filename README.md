@@ -130,6 +130,12 @@ Additionnaly, a method `launch_on_funcs` is provided for scripting purposes, and
 the result of the last run, in addition to the human output on console, is
 available in `sibyl_res` variable.
 
+### Binary Ninja stub
+
+An external stub for Binary Ninja is
+available [here](https://github.com/kenoph/binja_sibyl), maintained
+by [@kenoph](https://github.com/kenoph).
+
 Documentation
 -------------
 
