@@ -1,5 +1,5 @@
 # This file is part of Sibyl.
-# Copyright 2014 Camille MOUGEY <camille.mougey@cea.fr>
+# Copyright 2018 Camille MOUGEY <camille.mougey@cea.fr>
 #
 # Sibyl is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -13,10 +13,23 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Sibyl. If not, see <http://www.gnu.org/licenses/>.
+#
+# Author: Guillaume VALADON <guillaume@valadon.net>
 
-from sibyl.abi.x86 import ABIS as ABIS_X86
-from sibyl.abi.arm import ABIS as ABIS_ARM
-from sibyl.abi.mep import ABIS as ABIS_MEP
-from sibyl.abi.mips import ABIS as ABIS_MIPS
-ABIS = ABIS_X86 + ABIS_ARM + ABIS_MEP + ABIS_MIPS
-__all__ = ["ABIS"]
+
+from sibyl.abi import abi
+
+
+class ABI_MEP(abi.ABIRegsStack):
+
+    regs_mapping = ["R1", "R2", "R3", "R4"]
+    arch = ["mepl", "mepb"]
+
+    def set_ret(self, ret_addr):
+        self.jitter.cpu.LP = ret_addr
+
+    def vm_push(self, element):
+        self.jitter.push_uint32_t(element)
+
+
+ABIS = [ABI_MEP]
