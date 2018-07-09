@@ -19,9 +19,15 @@ import random
 from miasm2.jitter.csts import PAGE_READ, PAGE_WRITE
 from miasm2.expression.modint import mod_size2int
 from miasm2.expression.simplifications import expr_simp
-from miasm2.core.objc import CTypesManagerNotPacked, CHandler
-from miasm2.core.ctypesmngr import CAstTypes
-from miasm2.arch.x86.ctype import CTypeAMD64_unk
+try:
+    import pycparser
+except ImportError:
+    pycparser = None
+else:
+    from miasm2.core.objc import CTypesManagerNotPacked, CHandler
+    from miasm2.core.ctypesmngr import CAstTypes
+    from miasm2.arch.x86.ctype import CTypeAMD64_unk
+
 from sibyl.commons import HeaderFile
 
 
@@ -276,6 +282,11 @@ class TestHeader(Test):
 
     def __init__(self, *args, **kwargs):
         super(TestHeader, self).__init__(*args, **kwargs)
+        # Requirement check
+        if pycparser is None:
+            raise ImportError("pycparser module is needed to launch tests based"
+                              "on header files")
+
         ctype_manager = CTypesManagerNotPacked(CAstTypes(), CTypeAMD64_unk())
 
         hdr = HeaderFile(self.header, ctype_manager)
