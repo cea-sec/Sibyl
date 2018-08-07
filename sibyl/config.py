@@ -310,7 +310,7 @@ class Config(object):
         """Path of idaq64 binary, from config or PATH"""
         # Use custom value first
         if self.config["idaq64_path"]:
-            path = self.expandpath(self.config["idaq64"])
+            path = self.expandpath(self.config["idaq64_path"])
             if os.path.exists(path):
                 return path
 
