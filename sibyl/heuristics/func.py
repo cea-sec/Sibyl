@@ -109,6 +109,21 @@ def pattern_matching(func_heur):
     return addresses
 
 
+def named_symbols(func_heur):
+    """Return the addresses of named symbols"""
+
+    cont = func_heur.cont
+    loc_db = cont.loc_db
+
+    # Use the entry point
+    addresses = [cont.entry_point]
+    # Add address of symbol with a name (like 'main')
+    addresses += [loc_db.get_location_offset(loc)
+                  for loc in loc_db.loc_keys
+                  if loc_db.get_location_names(loc) is not None]
+    return {addr: 1 for addr in addresses}
+
+
 def ida_funcs(func_heur):
     """Use IDA heuristics to find functions"""
 
@@ -154,6 +169,7 @@ class FuncHeuristic(Heuristic):
 
     # Enabled passes
     heuristics = [
+        named_symbols,
         pattern_matching,
         recursive_call,
         ida_funcs,
