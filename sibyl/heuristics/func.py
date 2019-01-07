@@ -12,16 +12,14 @@ import sibyl.heuristics.csts as csts
 from sibyl.config import config
 
 
-def recursive_call(func_heur, addresses=None):
+def recursive_call(func_heur, addresses):
     """Try to find new functions by following subroutines calls"""
     # Prepare disassembly engine
     dis_engine = func_heur.machine.dis_engine
     cont = func_heur.cont
-    mdis = dis_engine(cont.bin_stream, symbol_pool=cont.symbol_pool)
-    if addresses is None:
-        addresses = [cont.entry_point]
+    loc_db = cont.loc_db
+    mdis = dis_engine(cont.bin_stream, loc_db=loc_db)
     mdis.follow_call = True
-
     # Launch disassembly
     cur_log_level = log_asmblock.level
     log_asmblock.setLevel(logging.CRITICAL)
@@ -29,11 +27,15 @@ def recursive_call(func_heur, addresses=None):
     label2block = {}
 
     for start_addr in addresses:
-        cfg_temp = mdis.dis_multibloc(start_addr)
+        try:
+            cfg_temp = mdis.dis_multiblock(start_addr)
+        except TypeError as error:
+            log_asmblock.critical("While disassembling: %s", error)
+            continue
 
         # Merge label2block, take care of disassembly order due to cache
         for node in cfg_temp.nodes():
-            label2block.setdefault(node.label, node)
+            label2block.setdefault(node, cfg_temp.loc_key_to_block(node))
     log_asmblock.setLevel(cur_log_level)
 
     # Find potential addresses
@@ -45,10 +47,10 @@ def recursive_call(func_heur, addresses=None):
         if last_line.is_subcall():
             for constraint in bbl.bto:
                 if constraint.c_t != "c_to" or \
-                   constraint.label not in label2block:
+                   constraint.loc_key not in label2block:
                     continue
 
-                succ = label2block[constraint.label]
+                succ = label2block[constraint.loc_key]
                 # Avoid redirectors
                 if len(succ.lines) == 0 or succ.lines[0].dstflow():
                     continue
@@ -57,7 +59,7 @@ def recursive_call(func_heur, addresses=None):
                 if isinstance(succ, AsmBlockBad):
                     continue
 
-                addresses[succ.label.offset] = 1
+                addresses[loc_db.get_location_offset(succ.loc_key)] = 1
 
     return addresses
 
@@ -92,7 +94,7 @@ def pattern_matching(func_heur):
     # Retrieve info
     architecture = func_heur.machine.name
     prologs = csts.func_prologs.get(architecture, [])
-    data = func_heur.cont.bin_stream.bin
+    data = func_heur.cont.bin_stream.bin.virt
 
     addresses = {}
 
@@ -105,6 +107,21 @@ def pattern_matching(func_heur):
             addresses[addr] = 1
 
     return addresses
+
+
+def named_symbols(func_heur):
+    """Return the addresses of named symbols"""
+
+    cont = func_heur.cont
+    loc_db = cont.loc_db
+
+    # Use the entry point
+    addresses = [cont.entry_point]
+    # Add address of symbol with a name (like 'main')
+    addresses += [loc_db.get_location_offset(loc)
+                  for loc in loc_db.loc_keys
+                  if loc_db.get_location_names(loc) is not None]
+    return {addr: 1 for addr in addresses}
 
 
 def ida_funcs(func_heur):
@@ -152,6 +169,7 @@ class FuncHeuristic(Heuristic):
 
     # Enabled passes
     heuristics = [
+        named_symbols,
         pattern_matching,
         recursive_call,
         ida_funcs,
