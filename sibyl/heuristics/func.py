@@ -94,7 +94,7 @@ def pattern_matching(func_heur):
     # Retrieve info
     architecture = func_heur.machine.name
     prologs = csts.func_prologs.get(architecture, [])
-    data = func_heur.cont.bin_stream.bin
+    data = func_heur.cont.bin_stream.bin.virt
 
     addresses = {}
 
