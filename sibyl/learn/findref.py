@@ -5,7 +5,7 @@ from miasm2.jitter.loader.elf import vm_load_elf
 from miasm2.analysis.machine import Machine
 from miasm2.jitter.csts import PAGE_READ, PAGE_WRITE, EXCEPT_ACCESS_VIOL, EXCEPT_DIV_BY_ZERO, EXCEPT_PRIV_INSN
 from miasm2.core.bin_stream import bin_stream_vm
-from miasm2.jitter.emulatedsymbexec import EmulatedSymbExec
+from miasm2.analysis.dse import ESETrackModif
 import miasm2.expression.expression as m2_expr
 from miasm2.ir.ir import AssignBlock
 from miasm2.core.objc import CHandler
@@ -13,21 +13,6 @@ from miasm2.core.objc import CHandler
 from sibyl.commons import objc_is_dereferenceable
 from sibyl.config import config
 
-
-class EmulatedSymbExecWithModif(EmulatedSymbExec):
-
-    def __init__(self, *args, **kwargs):
-        super(EmulatedSymbExecWithModif, self).__init__(*args, **kwargs)
-        self.modified_exprs = set()
-
-    def apply_change(self, dst, src):
-        self.modified_exprs.add(dst)
-        super(EmulatedSymbExecWithModif, self).apply_change(dst, src)
-
-    def run_at(self, *args, **kwargs):
-        self.modified_exprs = set()
-        addr = super(EmulatedSymbExecWithModif, self).run_at(*args, **kwargs)
-        return addr
 
 class ExtractRef(object):
     '''
@@ -128,7 +113,7 @@ class ExtractRef(object):
 
         # When it is possible, consider only elements modified in the last run
         # -> speed up to avoid browsing the whole memory
-        to_consider = self.symb.modified_exprs
+        to_consider = self.symb.modified_expr
 
         for symbol in to_consider:
             # Do not consider PC
@@ -212,6 +197,7 @@ class ExtractRef(object):
             return True
 
         # Update state
+        self.symb.reset_modified()
         asm_block = self.mdis.dis_block(cur_addr)
         ircfg = self.symb_ir.new_ircfg()
         self.symb_ir.add_asmblock_to_ircfg(asm_block, ircfg)
@@ -234,7 +220,7 @@ class ExtractRef(object):
         # Symbexec engine
         ## Prepare the symbexec engine
         self.symb_ir = self.machine.ir(self.mdis.loc_db)
-        self.symb = EmulatedSymbExecWithModif(jitter.cpu, jitter.vm, self.symb_ir, {})
+        self.symb = ESETrackModif(jitter.cpu, jitter.vm, self.symb_ir, {})
         self.symb.enable_emulated_simplifications()
 
         ## Update registers value
