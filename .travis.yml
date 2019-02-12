@@ -21,7 +21,7 @@ before_script:
 # install pyparsing
 - "pip install pyparsing"
 # install miasm
-- "cd ..;git clone https://github.com/cea-sec/miasm miasm && cd miasm;"
+- "cd ..;git clone -b 'v0.1.1' https://github.com/cea-sec/miasm miasm && cd miasm;"
 - "python setup.py build build_ext -I$(pwd)/../virtualenv/include -L$(pwd)/../virtualenv/tinycc"
 - "python setup.py install"
 - "cd ..;"
