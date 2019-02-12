@@ -88,7 +88,7 @@ class HeaderFile(object):
             args = {}
             for i, param in enumerate(ext.type.args.params):
                 args_order.append(param.name)
-                args[param.name] = objc_func.args[i]
+                args[param.name] = objc_func.args[i][1]
 
             self.functions[func_name] = FuncPrototype(func_name,
                                                       objc_func.type_ret,
@@ -98,13 +98,6 @@ def objc_is_dereferenceable(target_type):
     """Return True if target_type may be used as a pointer
     @target_type: ObjC"""
     return isinstance(target_type, (ObjCPtr, ObjCArray))
-
-
-def expr_to_types(c_handler, expr):
-    """Return the types of @expr, based on @c_handler knowledge"""
-    # XXX Temporary bug fix for c_handler.expr_to_types, as the current version
-    # does not support partial offsets
-    return [x.ctype for x in c_handler.access_c_gen.get_access(expr).info]
 
 
 class FuncPrototype(object):

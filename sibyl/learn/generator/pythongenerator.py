@@ -8,7 +8,7 @@ from miasm2.jitter.csts import PAGE_READ, PAGE_WRITE
 from miasm2.expression.expression import *
 from miasm2.expression.simplifications import expr_simp
 
-from sibyl.commons import objc_is_dereferenceable, expr_to_types
+from sibyl.commons import objc_is_dereferenceable
 
 initDefTemplate = '''def __init__(self, *args, **kwargs):
     super(Test{funcname}, self).__init__(*args, **kwargs)
@@ -147,7 +147,7 @@ class PythonGenerator(Generator):
 
         return self.printer.dump()
 
-    def sanitize_memory_accesses(self, memories, c_handler):
+    def sanitize_memory_accesses(self, memories, c_handler, expr_type_from_C):
         """Modify memory accesses to consider only access on "full final element"
         Example:
         struct T{
@@ -161,6 +161,7 @@ class PythonGenerator(Generator):
 
         @memories: AssignBlock
         @ctype_manager: CHandler with argument types
+        @expr_type_from_C: Name -> ObjC dict, for C -> Expr generation
 
         Return sanitized access, filled memory cases {Full access -> [offset filled]}
         """
@@ -183,14 +184,14 @@ class PythonGenerator(Generator):
 
                 # Convert atomic access -> fields access -> Expr access on the
                 # full field
-                info_C = c_handler.expr_to_c(mem_access)
+                info_C = list(c_handler.expr_to_c(mem_access))
                 assert len(info_C) == 1
 
                 if "__PAD__" in info_C[0]:
                     # This is a field used for padding, ignore it
                     continue
 
-                expr_sanitize = expr_simp(c_handler.c_to_expr(info_C[0]))
+                expr_sanitize = expr_simp(c_handler.c_to_expr(info_C[0], expr_type_from_C))
 
                 # Conserve the involved field
                 fields.add(expr_sanitize)
@@ -234,12 +235,13 @@ class PythonGenerator(Generator):
         memory_in = snapshot.memory_in
         memory_out = snapshot.memory_out
         c_handler = snapshot.c_handler
+        typed_C_ids = snapshot.typed_C_ids
         arguments_symbols = snapshot.arguments_symbols
         output_value = snapshot.output_value
 
         # Sanitize memory accesses
-        memory_in, _ = self.sanitize_memory_accesses(memory_in, c_handler)
-        memory_out, _ = self.sanitize_memory_accesses(memory_out, c_handler)
+        memory_in, _ = self.sanitize_memory_accesses(memory_in, c_handler, typed_C_ids)
+        memory_out, _ = self.sanitize_memory_accesses(memory_out, c_handler, typed_C_ids)
 
         # Allocate zones if needed
 
@@ -252,8 +254,8 @@ class PythonGenerator(Generator):
         fixed = {}
         for i, expr in enumerate(to_resolve):
             fixed[expr] = ExprId("base%d_ptr" % i, size=expr.size)
-            info_type = expr_to_types(c_handler, expr)
-            info_C = c_handler.expr_to_c(expr)
+            info_type = list(c_handler.expr_to_types(expr))
+            info_C = list(c_handler.expr_to_c(expr))
             assert len(info_type) == 1
             assert len(info_C) == 1
             arg_type = info_type[0]
@@ -298,8 +300,8 @@ class PythonGenerator(Generator):
                     fixed[addr_expr] = ptr
                     count += 1
 
-                info_type = expr_to_types(c_handler, addr_expr)
-                info_C = c_handler.expr_to_c(expr)
+                info_type = list(c_handler.expr_to_types(addr_expr))
+                info_C = list(c_handler.expr_to_c(expr))
                 # TODO handle unknown type?
                 assert len(info_type) == 1
                 assert len(info_C) == 1
@@ -405,8 +407,8 @@ class PythonGenerator(Generator):
         ## Inputs
         self.printer.add_empty_line()
         for dst in memory_in:
-            info_type = expr_to_types(c_handler, dst)
-            info_C = c_handler.expr_to_c(dst)
+            info_type = list(c_handler.expr_to_types(dst))
+            info_C = list(c_handler.expr_to_c(dst))
             # TODO handle unknown type?
             assert len(info_type) == 1
             assert len(info_C) == 1
@@ -474,12 +476,16 @@ class PythonGenerator(Generator):
 
         memory_out = snapshot.memory_out
         c_handler = snapshot.c_handler
+        typed_C_ids = snapshot.typed_C_ids
         arguments_symbols = snapshot.arguments_symbols
         output_value = snapshot.output_value
 
         # Sanitize memory accesses
-        memory_out, filled_out = self.sanitize_memory_accesses(memory_out,
-                                                               c_handler)
+        memory_out, filled_out = self.sanitize_memory_accesses(
+            memory_out,
+            c_handler,
+            typed_C_ids,
+        )
 
         fixed = self.fixed
         bases_to_C = self.bases_to_C
@@ -502,7 +508,7 @@ class PythonGenerator(Generator):
             else:
                 raise ValueError("Output should be in X, X + offset, @[X] form")
 
-            info_C = c_handler.expr_to_c(output_value)
+            info_C = list(c_handler.expr_to_c(output_value))
             assert len(info_C) == 1
             Clike = info_C[0]
 
@@ -520,8 +526,8 @@ class PythonGenerator(Generator):
             self.printer.add_block("# Check output value\nself._get_result() == %s,\n" % hex(retvalue))
 
         for dst in memory_out:
-            info_type = expr_to_types(c_handler, dst)
-            info_C = c_handler.expr_to_c(dst)
+            info_type = list(c_handler.expr_to_types(dst))
+            info_C = list(c_handler.expr_to_c(dst))
 
             # TODO handle unknown type?
             assert len(info_type) == 1

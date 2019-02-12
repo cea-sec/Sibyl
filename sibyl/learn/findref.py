@@ -10,7 +10,7 @@ import miasm2.expression.expression as m2_expr
 from miasm2.ir.ir import AssignBlock
 from miasm2.core.objc import CHandler
 
-from sibyl.commons import objc_is_dereferenceable, expr_to_types
+from sibyl.commons import objc_is_dereferenceable
 from sibyl.config import config
 
 
@@ -99,7 +99,7 @@ class ExtractRef(object):
 
     def is_pointer(self, expr):
         """Return True if expr may be a pointer"""
-        target_types = expr_to_types(self.c_handler, expr)
+        target_types = self.c_handler.expr_to_types(expr)
 
         return any(objc_is_dereferenceable(target_type)
                    for target_type in target_types)
@@ -261,7 +261,10 @@ class ExtractRef(object):
 
         # Inject argument
         self.init_values = {}
-        struct_expr_types = {}
+        # Expr -> set(ObjC types), for Expr -> C
+        typed_exprs = {}
+        # Expr name -> ObjC type, for C -> Expr
+        typed_C_ids = {}
         self.args_symbols = []
         for i, param_name in enumerate(self.prototype.args_order):
             cur_arg_abi = self.get_arg_n(i)
@@ -272,13 +275,15 @@ class ExtractRef(object):
             if objc_is_dereferenceable(arg_type):
                 # Convert the argument to symbol to track access based on it
                 self.symb.apply_change(cur_arg_abi, cur_arg)
-            struct_expr_types[cur_arg.name] = arg_type
+            typed_exprs[cur_arg] = set([arg_type])
+            typed_C_ids[cur_arg.name] = arg_type
             self.args_symbols.append(cur_arg)
 
         # Init Expr <-> C conversion
         # Strict access is deliberately not enforced (example: memcpy(struct))
-        self.c_handler = CHandler(self.types, struct_expr_types,
+        self.c_handler = CHandler(self.types, typed_exprs,
                                   enforce_strict_access=False)
+        self.typed_C_ids = typed_C_ids
 
         # Init output structures
         self.memories_read = set()
@@ -328,6 +333,7 @@ class ExtractRef(object):
         self.snapshot.memory_out = AssignBlock(memory_out)
         self.snapshot.output_value = output_value
         self.snapshot.c_handler = self.c_handler
+        self.snapshot.typed_C_ids = self.typed_C_ids
         self.snapshot.arguments_symbols = self.args_symbols
         self.snapshot.init_values = self.init_values
 
