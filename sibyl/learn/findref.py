@@ -105,7 +105,7 @@ class ExtractRef(object):
                    for target_type in target_types)
 
     def is_symbolic(self, expr):
-        return expr.is_mem() and not expr.arg.is_int()
+        return expr.is_mem() and not expr.ptr.is_int()
 
     def get_arg_n(self, arg_number):
         """Return the Expression corresponding to the argument number
@@ -138,13 +138,15 @@ class ExtractRef(object):
             # Read from ... @NN[... argX ...] ...
             symb_value = self.symb.eval_expr(symbol)
             to_replace = {}
-            for expr in m2_expr.ExprAff(symbol,
-                                        symb_value).get_r(mem_read=True):
+            for expr in m2_expr.ExprAssign(
+                    symbol,
+                    symb_value
+            ).get_r(mem_read=True):
                 if self.is_symbolic(expr):
-                    if isinstance(expr, m2_expr.ExprMem):
+                    if expr.is_mem():
                         # Consider each byte individually
                         # Case: @32[X] with only @8[X+1] to replace
-                        addr_expr = expr.arg
+                        addr_expr = expr.ptr
                         new_expr = []
                         consider = False
                         for offset in xrange(expr.size/8):
@@ -179,7 +181,7 @@ class ExtractRef(object):
                 if isinstance(symbol, m2_expr.ExprMem):
                     # Replace only in ptr (case to_replace: @[arg] = 8, expr:
                     # @[arg] = @[arg])
-                    symbol = m2_expr.ExprMem(self.symb.expr_simp(symbol.arg.replace_expr(to_replace)),
+                    symbol = m2_expr.ExprMem(self.symb.expr_simp(symbol.ptr.replace_expr(to_replace)),
                                       symbol.size)
                 self.symb.apply_change(symbol, symb_value)
 

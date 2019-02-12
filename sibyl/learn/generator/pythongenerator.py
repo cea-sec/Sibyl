@@ -170,7 +170,7 @@ class PythonGenerator(Generator):
         atomic_values = {}
         for dst, value in memories.iteritems():
             assert isinstance(dst, ExprMem)
-            addr_expr = dst.arg
+            addr_expr = dst.ptr
             for i in xrange(dst.size / 8):
                 # Split in atomic access
                 offset = ExprInt(i, addr_expr.size)
@@ -201,7 +201,7 @@ class PythonGenerator(Generator):
         for dst in fields:
             assert isinstance(dst, ExprMem)
             accumulator = []
-            addr_expr = dst.arg
+            addr_expr = dst.ptr
             for i in reversed(xrange(dst.size / 8)):
                 # Split in atomic access
                 offset = ExprInt(i, addr_expr.size)
@@ -247,7 +247,7 @@ class PythonGenerator(Generator):
         bases_to_C = {} # expr -> C-like
         to_resolve = set()
         for expr in memory_in.keys() + memory_out.keys():
-            to_resolve.update(expr.arg.get_r(mem_read=True))
+            to_resolve.update(expr.ptr.get_r(mem_read=True))
 
         fixed = {}
         for i, expr in enumerate(to_resolve):
@@ -271,7 +271,7 @@ class PythonGenerator(Generator):
             count = 0
             for expr in exprs:
                 assert isinstance(expr, ExprMem)
-                addr_expr = expr.arg
+                addr_expr = expr.ptr
 
                 # Expr.replace_expr is postfix, enumerate possibilities
                 if addr_expr.is_id() or addr_expr.is_mem():
@@ -426,7 +426,7 @@ class PythonGenerator(Generator):
                 value = memory_in[dst]
 
             # We already have the pointer allocated
-            addr = fixed[dst.arg]
+            addr = fixed[dst.ptr]
             self.printer.add_block('# %s = %s\n' % (info_C[0], value))
             self.printer.add_block('self._write_mem(%s, self.pack(%s, self.sizeof("%s")))\n' % (addr,
                                                                                            value,
@@ -456,7 +456,7 @@ class PythonGenerator(Generator):
 
         ## For the generated check needs
         to_save = set()
-        to_save.update(fixed[dst.arg] for dst in memory_out)
+        to_save.update(fixed[dst.ptr] for dst in memory_out)
         if base is not None:
             to_save.add(fixed[base])
 
@@ -542,7 +542,7 @@ class PythonGenerator(Generator):
                 value = memory_out[dst]
 
             # We already have the pointer allocated
-            addr = fixed[dst.arg]
+            addr = fixed[dst.ptr]
 
             if dst in filled_out:
                 # Sparse access, there are offset NOT to consider
