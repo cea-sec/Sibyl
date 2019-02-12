@@ -24,9 +24,9 @@ class EmulatedSymbExecWithModif(EmulatedSymbExec):
         self.modified_exprs.add(dst)
         super(EmulatedSymbExecWithModif, self).apply_change(dst, src)
 
-    def emul_ir_blocks(self, *args, **kwargs):
+    def run_at(self, *args, **kwargs):
         self.modified_exprs = set()
-        addr = super(EmulatedSymbExecWithModif, self).emul_ir_blocks(*args, **kwargs)
+        addr = super(EmulatedSymbExecWithModif, self).run_at(*args, **kwargs)
         return addr
 
 class ExtractRef(object):
@@ -210,15 +210,11 @@ class ExtractRef(object):
             return True
 
         # Update state
-        ## Reset cache structures
-        self.mdis.job_done.clear()
-        self.symb_ir.blocks.clear()
+        asm_block = self.mdis.dis_block(cur_addr)
+        ircfg = self.symb_ir.new_ircfg()
+        self.symb_ir.add_asmblock_to_ircfg(asm_block, ircfg)
 
-        ## Update current state
-        asm_block = self.mdis.dis_bloc(cur_addr)
-        irblocks = self.symb_ir.add_bloc(asm_block)
-
-        self.symb.emul_ir_blocks(cur_addr)
+        self.symb.run_at(ircfg, cur_addr)
 
         return True
 
@@ -235,7 +231,7 @@ class ExtractRef(object):
 
         # Symbexec engine
         ## Prepare the symbexec engine
-        self.symb_ir = self.machine.ir()
+        self.symb_ir = self.machine.ir(self.mdis.loc_db)
         self.symb = EmulatedSymbExecWithModif(jitter.cpu, jitter.vm, self.symb_ir, {})
         self.symb.enable_emulated_simplifications()
 
