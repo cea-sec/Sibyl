@@ -36,6 +36,8 @@ def recursive_call(func_heur, addresses):
         # Merge label2block, take care of disassembly order due to cache
         for node in cfg_temp.nodes():
             label2block.setdefault(node, cfg_temp.loc_key_to_block(node))
+            # Avoid re-disassembling
+            mdis.dont_dis.append(loc_db.get_location_offset(node))
     log_asmblock.setLevel(cur_log_level)
 
     # Find potential addresses
