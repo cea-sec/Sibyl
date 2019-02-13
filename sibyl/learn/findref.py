@@ -5,29 +5,14 @@ from miasm2.jitter.loader.elf import vm_load_elf
 from miasm2.analysis.machine import Machine
 from miasm2.jitter.csts import PAGE_READ, PAGE_WRITE, EXCEPT_ACCESS_VIOL, EXCEPT_DIV_BY_ZERO, EXCEPT_PRIV_INSN
 from miasm2.core.bin_stream import bin_stream_vm
-from miasm2.jitter.emulatedsymbexec import EmulatedSymbExec
+from miasm2.analysis.dse import ESETrackModif
 import miasm2.expression.expression as m2_expr
 from miasm2.ir.ir import AssignBlock
 from miasm2.core.objc import CHandler
 
-from sibyl.commons import objc_is_dereferenceable, expr_to_types
+from sibyl.commons import objc_is_dereferenceable
 from sibyl.config import config
 
-
-class EmulatedSymbExecWithModif(EmulatedSymbExec):
-
-    def __init__(self, *args, **kwargs):
-        super(EmulatedSymbExecWithModif, self).__init__(*args, **kwargs)
-        self.modified_exprs = set()
-
-    def apply_change(self, dst, src):
-        self.modified_exprs.add(dst)
-        super(EmulatedSymbExecWithModif, self).apply_change(dst, src)
-
-    def emul_ir_blocks(self, *args, **kwargs):
-        self.modified_exprs = set()
-        addr = super(EmulatedSymbExecWithModif, self).emul_ir_blocks(*args, **kwargs)
-        return addr
 
 class ExtractRef(object):
     '''
@@ -99,13 +84,13 @@ class ExtractRef(object):
 
     def is_pointer(self, expr):
         """Return True if expr may be a pointer"""
-        target_types = expr_to_types(self.c_handler, expr)
+        target_types = self.c_handler.expr_to_types(expr)
 
         return any(objc_is_dereferenceable(target_type)
                    for target_type in target_types)
 
     def is_symbolic(self, expr):
-        return expr.is_mem() and not expr.arg.is_int()
+        return expr.is_mem() and not expr.ptr.is_int()
 
     def get_arg_n(self, arg_number):
         """Return the Expression corresponding to the argument number
@@ -128,7 +113,7 @@ class ExtractRef(object):
 
         # When it is possible, consider only elements modified in the last run
         # -> speed up to avoid browsing the whole memory
-        to_consider = self.symb.modified_exprs
+        to_consider = self.symb.modified_expr
 
         for symbol in to_consider:
             # Do not consider PC
@@ -138,13 +123,15 @@ class ExtractRef(object):
             # Read from ... @NN[... argX ...] ...
             symb_value = self.symb.eval_expr(symbol)
             to_replace = {}
-            for expr in m2_expr.ExprAff(symbol,
-                                        symb_value).get_r(mem_read=True):
+            for expr in m2_expr.ExprAssign(
+                    symbol,
+                    symb_value
+            ).get_r(mem_read=True):
                 if self.is_symbolic(expr):
-                    if isinstance(expr, m2_expr.ExprMem):
+                    if expr.is_mem():
                         # Consider each byte individually
                         # Case: @32[X] with only @8[X+1] to replace
-                        addr_expr = expr.arg
+                        addr_expr = expr.ptr
                         new_expr = []
                         consider = False
                         for offset in xrange(expr.size/8):
@@ -179,7 +166,7 @@ class ExtractRef(object):
                 if isinstance(symbol, m2_expr.ExprMem):
                     # Replace only in ptr (case to_replace: @[arg] = 8, expr:
                     # @[arg] = @[arg])
-                    symbol = m2_expr.ExprMem(self.symb.expr_simp(symbol.arg.replace_expr(to_replace)),
+                    symbol = m2_expr.ExprMem(self.symb.expr_simp(symbol.ptr.replace_expr(to_replace)),
                                       symbol.size)
                 self.symb.apply_change(symbol, symb_value)
 
@@ -210,15 +197,12 @@ class ExtractRef(object):
             return True
 
         # Update state
-        ## Reset cache structures
-        self.mdis.job_done.clear()
-        self.symb_ir.blocks.clear()
+        self.symb.reset_modified()
+        asm_block = self.mdis.dis_block(cur_addr)
+        ircfg = self.symb_ir.new_ircfg()
+        self.symb_ir.add_asmblock_to_ircfg(asm_block, ircfg)
 
-        ## Update current state
-        asm_block = self.mdis.dis_bloc(cur_addr)
-        irblocks = self.symb_ir.add_bloc(asm_block)
-
-        self.symb.emul_ir_blocks(cur_addr)
+        self.symb.run_at(ircfg, cur_addr)
 
         return True
 
@@ -235,8 +219,8 @@ class ExtractRef(object):
 
         # Symbexec engine
         ## Prepare the symbexec engine
-        self.symb_ir = self.machine.ir()
-        self.symb = EmulatedSymbExecWithModif(jitter.cpu, jitter.vm, self.symb_ir, {})
+        self.symb_ir = self.machine.ir(self.mdis.loc_db)
+        self.symb = ESETrackModif(jitter.cpu, jitter.vm, self.symb_ir, {})
         self.symb.enable_emulated_simplifications()
 
         ## Update registers value
@@ -263,7 +247,10 @@ class ExtractRef(object):
 
         # Inject argument
         self.init_values = {}
-        struct_expr_types = {}
+        # Expr -> set(ObjC types), for Expr -> C
+        typed_exprs = {}
+        # Expr name -> ObjC type, for C -> Expr
+        typed_C_ids = {}
         self.args_symbols = []
         for i, param_name in enumerate(self.prototype.args_order):
             cur_arg_abi = self.get_arg_n(i)
@@ -274,13 +261,15 @@ class ExtractRef(object):
             if objc_is_dereferenceable(arg_type):
                 # Convert the argument to symbol to track access based on it
                 self.symb.apply_change(cur_arg_abi, cur_arg)
-            struct_expr_types[cur_arg.name] = arg_type
+            typed_exprs[cur_arg] = set([arg_type])
+            typed_C_ids[cur_arg.name] = arg_type
             self.args_symbols.append(cur_arg)
 
         # Init Expr <-> C conversion
         # Strict access is deliberately not enforced (example: memcpy(struct))
-        self.c_handler = CHandler(self.types, struct_expr_types,
+        self.c_handler = CHandler(self.types, typed_exprs,
                                   enforce_strict_access=False)
+        self.typed_C_ids = typed_C_ids
 
         # Init output structures
         self.memories_read = set()
@@ -330,6 +319,7 @@ class ExtractRef(object):
         self.snapshot.memory_out = AssignBlock(memory_out)
         self.snapshot.output_value = output_value
         self.snapshot.c_handler = self.c_handler
+        self.snapshot.typed_C_ids = self.typed_C_ids
         self.snapshot.arguments_symbols = self.args_symbols
         self.snapshot.init_values = self.init_values
 

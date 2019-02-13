@@ -62,7 +62,7 @@ class TracerMiasm(Tracer):
 
     def read_callback(self, symb_exec, expr_mem):
         '''Read callback that add the read event to the snapshot'''
-        addr = expr_mem.arg.arg.arg
+        addr = int(expr_mem.ptr)
         size = expr_mem.size / 8
         value = int(symb_exec.cpu.get_mem(addr, size)[::-1].encode("hex"), 16)
 
@@ -70,7 +70,7 @@ class TracerMiasm(Tracer):
 
     def write_callback(self, symb_exec, dest, data):
         '''Write callback that add the read event to the snapshot'''
-        addr = dest.arg.arg.arg
+        addr = int(dest.ptr)
         size = data.size / 8
         value = int(data.arg.arg)
 

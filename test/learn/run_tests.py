@@ -20,7 +20,7 @@ def invoke_pin(filename, func_name, header_filename, cont):
     return ["sibyl", "learn", "-t", "pin", func_name, filename, header_filename]
 
 def invoke_miasm(filename, func_name, header_filename, cont):
-    main_addr = cont.symbol_pool["main"].offset
+    main_addr = cont.loc_db.get_name_offset("main")
     return ["sibyl", "learn", "-t", "miasm", "-m", "0x%x" % main_addr,
             func_name, filename, header_filename]
 
@@ -59,7 +59,7 @@ def test_learn(args):
             cont = Container.from_stream(fdesc)
 
         func_name = filename
-        func_addr = cont.symbol_pool[func_name].offset
+        func_addr = cont.loc_db.get_name_offset(func_name)
         header_filename = "%s.h" % filename
 
         for name, cb in to_invoke.iteritems():

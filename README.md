@@ -155,7 +155,7 @@ Installation
 
 ### Standard
 
-_Sibyl_ requires at least _Miasm2_ version `67117bf` and the corresponding version of _Elfesteem_.
+_Sibyl_ requires at least _Miasm2_ version `v0.1.1` and the corresponding version of _Elfesteem_.
 For the `qemu` engine, the `unicorn` python package must be installed (refer to the documentation of Unicorn for more detail).
 
 _Sibyl_ comes as a Python module, and the installation follow the standard procedure:
