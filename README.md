@@ -1,6 +1,6 @@
 This file is part of Sibyl.
 
-Copyright 2014 - 2017 [Camille MOUGEY](mailto:camille.mougey@cea.fr)
+Copyright 2014 - 2019 [Camille MOUGEY](mailto:camille.mougey@cea.fr)
 
 
 Sibyl
@@ -148,7 +148,7 @@ A more detailed documentation is available in `doc`:
 * [Adding a new signature](doc/ADD_TEST.md)
 * [Adding a new ABI](doc/ADD_ABI.md)
 
-Current version is v0.1. See [changelog](doc/CHANGELOG.md) for more details.
+Current version is v0.2. See [changelog](doc/CHANGELOG.md) for more details.
 
 Installation
 ------------
