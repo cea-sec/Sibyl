@@ -266,7 +266,7 @@ Testsets to use:
     }
 
     # int __cdecl(int, int) -> __cdecl
-    gtype_matcher = re.compile(".+ ([^\(]+)\([^\)]*\)")
+    gtype_matcher = re.compile(".+ \*?([^\(]+)\([^\)]*\)")
 
     @property
     def abi(self):
