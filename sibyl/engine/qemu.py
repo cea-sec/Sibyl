@@ -62,6 +62,8 @@ class UcWrapJitter(object):
             raise ValueError("Unimplemented architecture (%s, %s)" % (ask_arch,
                                                                       ask_attrib))
         arch, mode = cpucls.uc_arch, cpucls.uc_mode
+        self.ask_arch = ask_arch
+        self.ask_attrib = ask_attrib
 
         self.mu = unicorn.Uc(arch, mode)
         self.vm = UcWrapVM(self.mu)
@@ -83,9 +85,13 @@ class UcWrapJitter(object):
         self.vm.set_mem(getattr(self.cpu, self.ira.sp.name), pck64(value))
 
     def run(self, pc, timeout_seconds=1):
+        # checking which instruction you want to emulate: THUMB/THUMB2 or others
+        # Note we start at ADDRESS | 1 to indicate THUMB mode.
         try:
-            self.mu.emu_start(pc, END_ADDR,
-                              timeout_seconds * unicorn.UC_SECOND_SCALE)
+            if self.ask_arch == 'armt' and self.ask_attrib == 'l':
+                self.mu.emu_start(pc | 1, END_ADDR, timeout_seconds * unicorn.UC_SECOND_SCALE)
+            else:
+                self.mu.emu_start(pc, END_ADDR, timeout_seconds * unicorn.UC_SECOND_SCALE)
         except unicorn.UcError as e:
             if getattr(self.cpu, self.ira.pc.name) != END_ADDR:
                 raise UnexpectedStopException()
@@ -312,6 +318,34 @@ class UcWrapCPU_arml(UcWrapCPU):
         self.pc_reg_value = csts.UC_ARM_REG_PC
         super(self.__class__, self).__init__(*args, **kwargs)
 
+class UcWrapCPU_armtl(UcWrapCPU):
+    '''
+    Class for emulation thumb instructions
+    '''
+    reg_mask = 0xFFFFFFFF
+
+    if unicorn:
+        uc_arch = unicorn.UC_ARCH_ARM
+        uc_mode = unicorn.UC_MODE_THUMB
+
+    def __init__(self, *args, **kwargs):
+        import unicorn.arm_const as csts
+        self.regs = {
+            'CPSR': csts.UC_ARM_REG_CPSR, 'SPSR': csts.UC_ARM_REG_SPSR,
+            'R4': csts.UC_ARM_REG_R4, 'R5': csts.UC_ARM_REG_R5,
+            'R6': csts.UC_ARM_REG_R6, 'R1': csts.UC_ARM_REG_R1,
+            'R7': csts.UC_ARM_REG_R7, 'R0': csts.UC_ARM_REG_R0,
+            'R2': csts.UC_ARM_REG_R2, 'R3': csts.UC_ARM_REG_R3,
+            'R8': csts.UC_ARM_REG_R8, 'R15': csts.UC_ARM_REG_R15,
+            'R9': csts.UC_ARM_REG_R9, 'R14': csts.UC_ARM_REG_R14,
+            'R12': csts.UC_ARM_REG_R12, 'R13': csts.UC_ARM_REG_R13,
+            'R10': csts.UC_ARM_REG_R10, 'SL': csts.UC_ARM_REG_SL,
+            'R11': csts.UC_ARM_REG_R11, 'SP': csts.UC_ARM_REG_SP,
+            'SB': csts.UC_ARM_REG_SB, 'LR': csts.UC_ARM_REG_LR,
+        }
+        self.pc_reg_name = "PC"
+        self.pc_reg_value = csts.UC_ARM_REG_PC
+        super(self.__class__, self).__init__(*args, **kwargs)
 
 class UcWrapCPU_armb(UcWrapCPU_arml):
 
@@ -418,6 +452,7 @@ class UcWrapCPU_mips32b(UcWrapCPU):
 UcWrapCPU_x86_32.register("x86", 32)
 UcWrapCPU_x86_64.register("x86", 64)
 UcWrapCPU_arml.register("arm", "l")
+UcWrapCPU_arml.register("armt", "l")
 UcWrapCPU_armb.register("arm", "b")
 UcWrapCPU_mips32l.register("mips32", "l")
 UcWrapCPU_mips32b.register("mips32", "b")
