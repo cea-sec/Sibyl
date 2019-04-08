@@ -47,8 +47,8 @@ As a sideline, _Sibyl_ can be used to bruteforce a program ABI.
 Basic usage
 -----------
 
-_Sibyl_ comes with a CLI, named `sibyl`, and an _IDA_ (https://www.hex-rays.com)
-stub.
+_Sibyl_ comes with a CLI, named `sibyl`, an _IDA_ (https://www.hex-rays.com)
+stub and a _GHIDRA_ (https://ghidra-sre.org/) stub.
 
 ### CLI
 
@@ -136,6 +136,18 @@ An external stub for Binary Ninja is
 available [here](https://github.com/kenoph/binja_sibyl), maintained
 by [@kenoph](https://github.com/kenoph).
 
+### GHIDRA stub
+
+The GHIDRA stub is located in `ext/ghidra/find.py`. If `sibyl` is installed on
+the system, no other action is needed to have it running (see section
+Installation for more details). One just need to copy or link the script to path
+known by GHIDRA (as `~/ghidra_scripts`).
+
+Then, it can be called from GHIDRA inteface, through the "Script Manager",
+category "FunctionID".
+![GHIDRA stub](doc/img/ghidra_screen.png?raw=true)
+![Commented function](doc/img/ghidra_screen2.png?raw=true)
+
 Documentation
 -------------
 
@@ -171,11 +183,12 @@ In addition of the `sibyl` Python module, a CLI tool is provided, named
 If needed, consult [testing documentation](doc/TESTING.md) to check your Sibyl
 installation.
 
-### IDA
+### IDA & GHIDRA
 
-The IDA stub is located in `ext/ida`. To benefit from multiprocessing, Sibyl is
-invoke through the CLI as a subprocess. Then, there is no need to have the
-`sibyl` module in IDA Python namespace.
+IDA & GHIDRA stub are respectively located in `ext/ida` and `ext/ghidra`. To
+benefit from multiprocessing, Sibyl is invoke through the CLI as a
+subprocess. Then, there is no need to have the `sibyl` module in IDA Python nor
+GHIDRA namespace.
 
 Long story short, it should work out of the box once `sibyl` CLI is available.
 
