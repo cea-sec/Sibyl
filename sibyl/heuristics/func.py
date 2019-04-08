@@ -3,6 +3,7 @@ import logging
 import re
 import tempfile
 import subprocess
+import shutil
 import os
 
 from miasm2.core.asmblock import AsmBlockBad, log_asmblock
@@ -166,6 +167,50 @@ Exit(0)
     return addresses
 
 
+def ghidra_funcs(func_heur):
+    """Use GHIDRA heuristics to find functions"""
+
+    ghidra_headless_path = config.ghidra_headless_path
+    if not ghidra_headless_path:
+        return {}
+
+    # Prepare temporary files: GHIDRA project location and output
+    tmp_project_location = tempfile.mkdtemp(prefix="sibyl_ghidra_fakeproj")
+    tmp_log = tempfile.NamedTemporaryFile(suffix=".log", delete=True)
+
+    # Launch GHIDRA
+    env = os.environ.copy()
+    script_path = os.path.dirname(config.ghidra_export_function)
+    script_name = os.path.basename(config.ghidra_export_function)
+    run = subprocess.Popen(
+        [
+            ghidra_headless_path, tmp_project_location, "fakeproj",
+            "-import", func_heur.filename,
+            "-preScript", script_name,
+            "-scriptPath", script_path,
+            "-scriptlog", tmp_log.name,
+        ],
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    run.communicate()
+
+    # Get back addresses
+    tmp_log.seek(0)
+    addresses = {}
+    for line in tmp_log:
+        info = re.findall(script_name + "> 0x([0-9a-f]+)", line)
+        if info:
+            addresses[int(info[0], 16)] = 1
+
+    # Clean-up
+    tmp_log.close()
+    shutil.rmtree(tmp_project_location)
+
+    return addresses
+
+
 class FuncHeuristic(Heuristic):
     """Provide heuristic for function start address detection"""
 
@@ -175,6 +220,7 @@ class FuncHeuristic(Heuristic):
         pattern_matching,
         recursive_call,
         ida_funcs,
+        ghidra_funcs,
     ]
 
     def __init__(self, cont, machine, filename):

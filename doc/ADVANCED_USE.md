@@ -45,11 +45,8 @@ where the `pattern_matching` one is very fast but innacurate.
 
 The full list can be obtain in the `--help` description.
 
-As a side note, a common, dirty, way to obtain function addresses is to use the
-following one-liner in IDA console:
-```Python
-open("/tmp/addrs", "w").write("\n".join(hex(x).replace("L", "") for x in Functions()))
-```
+If an IDA or GHIDRA installation is detected, it will be used primarily as an
+addresses source. They can be enabled / disabled through `-e`/`-d` options.
 
 ### Addresses specification
 
