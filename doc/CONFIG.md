@@ -124,6 +124,19 @@ This section contains options relative to IDA use.
 The `idaq64` parameter is the path of the `idaq64` binary. It will be used to
 find the executable if it is not in the `$PATH`.
 
+### Section 'ghidra'
+
+This section contains options relative to GHIDRA use.
+
+The `headless` parameter is the path of the `analyzeHeadless` binary (usually at
+`GHIDRA_PATH/support/analyzeHeadless`). It will be used to find the executable
+if it is not in the `$PATH`.
+
+The `export_function` is the path of the script used to discover function
+(launched as a *GHIDRA preScript*). The one provided with Sibyl is named
+`ExportFunction.java` (`ext/ghidra/ExportFunction.java`).
+
+
 ### Configuration overview
 
 Using `sibyl config` without option, one can obtain:
