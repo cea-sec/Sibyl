@@ -34,6 +34,7 @@ default_config = {
               "$MIASM/os_dep/linux_stdlib.py",
     ],
     "idaq64_path": "",
+    "ghidra_headless_path": "",
 }
 
 config_paths = [os.path.join(path, 'sibyl.conf')
@@ -152,6 +153,13 @@ class Config(object):
             if cparser.has_option("ida", "idaq64"):
                 self.config["idaq64_path"] = cparser.get("ida", "idaq64")
 
+        # GHIDRA
+        #
+        # [ghidra]
+        if cparser.has_section("ghidra"):
+            # headless = /path/to/analyzeHeadless
+            if cparser.has_option("ghidra", "headless"):
+                self.config["ghidra_headless_path"] = cparser.get("ghidra", "headless")
 
     def dump(self):
         """Dump the current configuration as a config file"""
@@ -190,6 +198,11 @@ class Config(object):
         out.append("")
         out.append("[ida]")
         out.append("idaq64 = %s" % self.config["idaq64_path"])
+
+        # IDA
+        out.append("")
+        out.append("[ghidra]")
+        out.append("headless = %s" % self.config["ghidra_headless_path"])
 
         return out
 
@@ -321,5 +334,23 @@ class Config(object):
                 return path
 
         return None
+
+    @property
+    def ghidra_headless_path(self):
+        """Path of GHIDRA analyzeHeadless binary, from config or PATH"""
+        # Use custom value first
+        if self.config["ghidra_headless_path"]:
+            path = self.expandpath(self.config["ghidra_headless_path"])
+            if os.path.exists(path):
+                return path
+
+        # Try to find in $PATH
+        for path in os.environ["PATH"].split(os.pathsep):
+            path = os.path.join(path.strip('"'), "analyzeHeadless")
+            if os.path.exists(path):
+                return path
+
+        return None
+
 
 config = Config(default_config, config_paths)

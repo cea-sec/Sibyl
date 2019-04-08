@@ -94,6 +94,13 @@ class ActionConfig(Action):
         else:
             print "IDA has been not found"
 
+        # GHIDRA Headless
+        ghidra_headless_path = config.ghidra_headless_path
+        if ghidra_headless_path:
+            print "GHIDRA analyzeHeadless has been found at: %s" % ghidra_headless_path
+        else:
+            print "GHIDRA analyzeHeadless has been not found"
+
         # Tests
         print "Tests availables:"
         for name, tests in config.available_tests.iteritems():
