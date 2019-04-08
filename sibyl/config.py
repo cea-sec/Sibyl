@@ -35,6 +35,7 @@ default_config = {
     ],
     "idaq64_path": "",
     "ghidra_headless_path": "",
+    "ghidra_export_function": "$SIBYL/ext/ghidra/ExportFunction.java",
 }
 
 config_paths = [os.path.join(path, 'sibyl.conf')
@@ -160,6 +161,9 @@ class Config(object):
             # headless = /path/to/analyzeHeadless
             if cparser.has_option("ghidra", "headless"):
                 self.config["ghidra_headless_path"] = cparser.get("ghidra", "headless")
+            # export_function = /path/to/ExportFunction.java
+            if cparser.has_option("ghidra", "export_function"):
+                self.config["ghidra_export_function"] = cparser.get("ghidra", "export_function")
 
     def dump(self):
         """Dump the current configuration as a config file"""
@@ -199,10 +203,11 @@ class Config(object):
         out.append("[ida]")
         out.append("idaq64 = %s" % self.config["idaq64_path"])
 
-        # IDA
+        # GHIDRA
         out.append("")
         out.append("[ghidra]")
         out.append("headless = %s" % self.config["ghidra_headless_path"])
+        out.append("export_function = %s" % self.config["ghidra_export_function"])
 
         return out
 
@@ -351,6 +356,14 @@ class Config(object):
                 return path
 
         return None
+
+    @property
+    def ghidra_export_function(self):
+        """ExportFunction.java headless script for function discovery through
+        GHIDRA
+        """
+        return self.expandpath(self.config["ghidra_export_function"])
+
 
 
 config = Config(default_config, config_paths)
