@@ -263,7 +263,7 @@ class UcWrapCPU_x86_32(UcWrapCPU):
         }
         self.pc_reg_name = "EIP"
         self.pc_reg_value = csts.UC_X86_REG_EIP
-        super(self.__class__, self).__init__(*args, **kwargs)
+        super(UcWrapCPU_x86_32, self).__init__(*args, **kwargs)
 
 
 class UcWrapCPU_x86_64(UcWrapCPU):
@@ -288,7 +288,7 @@ class UcWrapCPU_x86_64(UcWrapCPU):
         }
         self.pc_reg_name = "RIP"
         self.pc_reg_value = csts.UC_X86_REG_RIP
-        super(self.__class__, self).__init__(*args, **kwargs)
+        super(UcWrapCPU_x86_64, self).__init__(*args, **kwargs)
 
 
 class UcWrapCPU_arml(UcWrapCPU):
@@ -316,7 +316,7 @@ class UcWrapCPU_arml(UcWrapCPU):
         }
         self.pc_reg_name = "PC"
         self.pc_reg_value = csts.UC_ARM_REG_PC
-        super(self.__class__, self).__init__(*args, **kwargs)
+        super(UcWrapCPU_arml, self).__init__(*args, **kwargs)
 
 class UcWrapCPU_armtl(UcWrapCPU):
     '''
@@ -345,12 +345,15 @@ class UcWrapCPU_armtl(UcWrapCPU):
         }
         self.pc_reg_name = "PC"
         self.pc_reg_value = csts.UC_ARM_REG_PC
-        super(self.__class__, self).__init__(*args, **kwargs)
+        super(UcWrapCPU_armtl, self).__init__(*args, **kwargs)
 
 class UcWrapCPU_armb(UcWrapCPU_arml):
 
     if unicorn:
         uc_mode = unicorn.UC_MODE_ARM + unicorn.UC_MODE_BIG_ENDIAN
+
+    def __init__(self, *args, **kwargs):
+        super(UcWrapCPU_armb, self).__init__(*args, **kwargs)
 
 
 class UcWrapCPU_mips32l(UcWrapCPU):
@@ -440,13 +443,16 @@ class UcWrapCPU_mips32l(UcWrapCPU):
         }
         self.pc_reg_name = "PC"
         self.pc_reg_value = csts.UC_MIPS_REG_PC
-        super(self.__class__, self).__init__(*args, **kwargs)
+        super(UcWrapCPU_mips32l, self).__init__(*args, **kwargs)
 
 
-class UcWrapCPU_mips32b(UcWrapCPU):
+class UcWrapCPU_mips32b(UcWrapCPU_mips32l):
 
     if unicorn:
         uc_mode = unicorn.UC_MODE_MIPS32 + unicorn.UC_MODE_BIG_ENDIAN
+
+    def __init__(self, *args, **kwargs):
+        super(UcWrapCPU_mips32b, self).__init__(*args, **kwargs)
 
 
 UcWrapCPU_x86_32.register("x86", 32)
